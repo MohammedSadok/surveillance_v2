@@ -1,28 +1,37 @@
 import { z } from "zod";
 
+const TimeSchema = z.string().regex(/^\d{2}:\d{2}$/, "Format d'heure invalide");
+
+const TimeRangeSchema = z
+  .object({
+    start: TimeSchema,
+    end: TimeSchema,
+  })
+  .refine((data) => data.start < data.end, {
+    message: "L'heure de début doit être avant l'heure de fin",
+  });
+
 export const SessionSchema = z.object({
   type: z.string({
-    required_error: "Veuillez sélectionner un type pour la session d'examens.",
+    message: "Veuillez sélectionner un type pour la session d'examens.",
   }),
-  startDate: z.date({
-    required_error: "La date de début de session est requise.",
-  }),
-  endDate: z.date({
-    required_error: "La date de fin de session est requise.",
-  }),
-  first: z.string().min(8, {
-    message: "Veuillez entrer l'heure de la session d'examens.",
-  }),
-
-  second: z.string().min(8, {
-    message: "Veuillez entrer l'heure de la session d'examens.",
-  }),
-  third: z.string().min(8, {
-    message: "Veuillez entrer l'heure de la session d'examens.",
-  }),
-  fourth: z.string().min(8, {
-    message: "Veuillez entrer l'heure de la session d'examens.",
-  }),
+  dateRange: z
+    .object({
+      from: z.date({
+        message: "Une date de début est requise.",
+      }),
+      to: z.date({
+        message: "Une date de fin est requise.",
+      }),
+    })
+    .refine((data) => data.from <= data.to, {
+      message: "La date de début ne peut pas être après la date de fin.",
+      path: ["dateRange"],
+    }),
+  morningSession1: TimeRangeSchema,
+  morningSession2: TimeRangeSchema,
+  afternoonSession1: TimeRangeSchema,
+  afternoonSession2: TimeRangeSchema,
 });
 
 export const DepartmentSchema = z.object({
@@ -58,7 +67,7 @@ export const LocationSchema = z.object({
     message: "La taille doit être un nombre entier positif.",
   }),
   type: z.enum(["CLASSROOM", "AMPHITHEATER"], {
-    required_error: "Vous devez selectionner le type.",
+    message: "Vous devez selectionner le type.",
   }),
 });
 
