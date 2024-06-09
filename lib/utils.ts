@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { Student } from "./schema";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -92,4 +93,23 @@ export const groupData = (data: RawData[]): GroupedData => {
     }
     return acc;
   }, {} as GroupedData);
+};
+
+export const transformData = (
+  rawData: RawData[],
+  sessionExamId: number
+): Omit<Student, "id">[][] => {
+  const data = rawData.map((data) => ({
+    cin: data[3],
+    firstName: data[1],
+    lastName: data[2],
+    sessionExamId: sessionExamId,
+    moduleId: data[6],
+  }));
+  const size = 10000;
+  const result = [];
+  for (let i = 0; i < data.length; i += size) {
+    result.push(data.slice(i, i + size));
+  }
+  return result;
 };

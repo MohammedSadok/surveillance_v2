@@ -8,23 +8,10 @@ import {
   Student,
   student,
 } from "@/lib/schema";
-import { groupData, GroupedData, RawData } from "@/lib/utils";
+import { GroupedData } from "@/lib/utils";
 import { and, eq } from "drizzle-orm";
 
-function transformData(
-  rawData: RawData[],
-  sessionExamId: number
-): Omit<Student, "id">[] {
-  return rawData.map((data) => ({
-    cin: data[3],
-    firstName: data[1],
-    lastName: data[2],
-    sessionExamId: sessionExamId,
-    moduleId: data[6],
-  }));
-}
-
-export const insertStudent = async (students: Omit<Student, "id">[]) => {
+export const insertStudents = async (students: Omit<Student, "id">[]) => {
   await db.insert(student).values(students);
 };
 
@@ -52,81 +39,34 @@ export const getOption = async (newOption: Option) => {
   });
   return result || null;
 };
-export const processGroupedData = async (
-  data: RawData[],
-  sessionExamId: number
+export const insertOptionsAndModules = async (
+  optionsAndModules: GroupedData
 ) => {
-  const groupedData = groupData(data);
-  console.log("=>  groupedData:", groupedData);
-  // const students = transformData(data, sessionExamId);
-
-  // const optionPromises = Object.entries(groupedData).map(
-  //   async ([optionId, optionData]) => {
-  //     // Check if option exists
-  //     const existingOption = await db.query.option.findFirst({
-  //       where: eq(option.id, optionId),
-  //     });
-  //     if (!existingOption) {
-  //       // Insert option if not exists
-  //       await insertOption({ id: optionId, name: optionData.name });
-  //     }
-
-  //     await db.transaction(async (trx) => {
-  //       const modulePromises = Object.entries(optionData.modules).map(
-  //         async ([moduleId, moduleData]) => {
-  //           // Check if module exists within the transaction
-  //           const existingModule = await trx.query.moduleTable.findFirst({
-  //             where: and(
-  //               eq(moduleTable.id, moduleId),
-  //               eq(moduleTable.name, moduleData.name)
-  //             ),
-  //           });
-  //           if (!existingModule) {
-  //             // Insert module if not exists within the transaction
-  //             await trx.insert(moduleTable).values({
-  //               id: moduleId,
-  //               name: moduleData.name,
-  //               optionId: optionId,
-  //             });
-  //           }
-  //         }
-  //       );
-
-  //       await Promise.all(modulePromises);
-  //     });
-  //   }
-  // );
-
-  // // Wait for all option insertions to complete
-  // await Promise.all(optionPromises);
-
-  // Insert all students after all options and modules have been inserted
-  // await insertStudent(students);
-};
-
-export const insertOptionAndModules = async (data: GroupedData) => {
-  for (const optionId in data) {
-    if (data.hasOwnProperty(optionId)) {
+  for (const optionId in optionsAndModules) {
+    if (optionsAndModules.hasOwnProperty(optionId)) {
       const existOption = await getOption({
         id: optionId,
-        name: data[optionId].name,
+        name: optionsAndModules[optionId].name,
       });
 
       if (!existOption) {
-        await insertOption({ id: optionId, name: data[optionId].name });
+        await insertOption({
+          id: optionId,
+          name: optionsAndModules[optionId].name,
+        });
       }
 
-      for (const moduleId in data[optionId].modules) {
-        if (data[optionId].modules.hasOwnProperty(moduleId)) {
+      for (const moduleId in optionsAndModules[optionId].modules) {
+        if (optionsAndModules[optionId].modules.hasOwnProperty(moduleId)) {
           const existModule = await getModule({
             id: moduleId,
-            name: data[optionId].modules[moduleId].name,
+            name: optionsAndModules[optionId].modules[moduleId].name,
             optionId: optionId,
           });
           if (!existModule) {
             await insertModule({
               id: moduleId,
-              name: data[optionId].modules[moduleId].name,
+              name: optionsAndModules[optionId].modules[moduleId].name,
               optionId: optionId,
             });
           }
@@ -134,4 +74,13 @@ export const insertOptionAndModules = async (data: GroupedData) => {
       }
     }
   }
+};
+
+export const insertStudentsChunk = async (
+  students: Omit<Student, "id">[],
+  sessionExamId: number
+) => {
+  await insertStudents(
+    students.map((student) => ({ ...student, sessionExamId }))
+  );
 };

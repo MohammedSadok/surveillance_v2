@@ -16,8 +16,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { createSession } from "@/data/session";
+import { insertOptionsAndModules, insertStudentsChunk } from "@/data/students";
 import { useModal } from "@/hooks/useModalStore";
-import { cn, expectedColumns, groupData } from "@/lib/utils";
+import { cn, expectedColumns, groupData, transformData } from "@/lib/utils";
 import { SessionSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -39,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { insertOptionAndModules } from "@/data/students";
+
 const SessionModal = () => {
   const { isOpen, onClose, type } = useModal();
   const router = useRouter();
@@ -100,10 +102,14 @@ const SessionModal = () => {
       afternoonSession1: values.afternoonSession1,
       afternoonSession2: values.afternoonSession2,
     };
-    // const id = await createSession(data);
-    const gr = groupData(students);
-    console.log("=>  onSubmit  gr:", gr);
-    await insertOptionAndModules(gr);
+    const id = await createSession(data);
+    const optionsAndModules = groupData(students);
+    const studentChunks = transformData(students, id);
+    await insertOptionsAndModules(optionsAndModules);
+    await Promise.all(
+      studentChunks.map((chunk) => insertStudentsChunk(chunk, id))
+    );
+    router.push(`/sessions/${id}`);
     onClose();
   };
 
