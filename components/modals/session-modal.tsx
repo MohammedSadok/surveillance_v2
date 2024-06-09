@@ -17,17 +17,20 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useModal } from "@/hooks/useModalStore";
-import { createSession } from "@/lib/query";
-import { cn } from "@/lib/utils";
+import { cn, expectedColumns, groupData } from "@/lib/utils";
 import { SessionSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { read, utils } from "xlsx";
 import * as z from "zod";
 import { TimeInput } from "../TimeInput";
 import { Calendar } from "../ui/calendar";
+import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
   Select,
@@ -36,11 +39,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-
+import { insertOptionAndModules } from "@/data/students";
 const SessionModal = () => {
   const { isOpen, onClose, type } = useModal();
   const router = useRouter();
-
+  const [students, setStudents] = useState<any[]>([]);
   const isModalOpen = isOpen && type === "createSession";
 
   const form = useForm<z.infer<typeof SessionSchema>>({
@@ -54,6 +57,34 @@ const SessionModal = () => {
   });
 
   const isLoading = form.formState.isSubmitting;
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files && event.target.files[0];
+    if (file) {
+      form.setValue("urlFile", file);
+
+      const fileReader = new FileReader();
+      fileReader.onload = function () {
+        const arrayBuffer = this.result;
+        const workbook = read(arrayBuffer, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data: any[] = utils.sheet_to_json(sheet, { header: 1 });
+        const fileColumns = data[0];
+
+        if (
+          fileColumns.length !== expectedColumns.length ||
+          !fileColumns.every((col, index) => col === expectedColumns[index])
+        ) {
+          toast.error("Le fichier ne correspond pas au format attendu.");
+          return;
+        } else {
+          // Remove the first line (header)
+          const dataWithoutHeaders = data.slice(1);
+          setStudents(dataWithoutHeaders);
+        }
+      };
+      fileReader.readAsArrayBuffer(file);
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof SessionSchema>) => {
     const start = format(values.dateRange.from, "yyyy-MM-dd");
@@ -69,7 +100,11 @@ const SessionModal = () => {
       afternoonSession1: values.afternoonSession1,
       afternoonSession2: values.afternoonSession2,
     };
-    const result = await createSession(data);
+    // const id = await createSession(data);
+    const gr = groupData(students);
+    console.log("=>  onSubmit  gr:", gr);
+    await insertOptionAndModules(gr);
+    onClose();
   };
 
   const handleClose = () => {
@@ -230,6 +265,23 @@ const SessionModal = () => {
                   </FormItem>
                 </div>
               </div>
+              <FormField
+                control={form.control}
+                name="urlFile"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col items-start space-y-2 min-w-max">
+                    <FormLabel>Uploader un ficher excel</FormLabel>
+                    <Input
+                      accept=".xlsx, .xls"
+                      type="file"
+                      disabled={isLoading}
+                      placeholder="Entrez le nombre d'étudiants inscrits"
+                      onChange={handleFileChange}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             <DialogFooter className="px-6 py-4 bg-gray-100 w-full">
               <Button disabled={isLoading}>

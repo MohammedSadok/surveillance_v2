@@ -1,9 +1,9 @@
 "use client";
 
-// import DepartementModal from "@/components/modals/departement-modal";
-// import EnseignantModal from "@/components/modals/teacher-modal";
+import DepartmentModal from "@/components/modals/department-modal";
+import TeacherModal from "@/components/modals/teacher-modal";
 // import ExamModal from "@/components/modals/exam-modal";
-// import LocalModal from "@/components/modals/local-modal";
+import LocalModal from "@/components/modals/local-modal";
 import SessionModal from "@/components/modals/session-modal";
 import { useEffect, useState } from "react";
 // import UserModal from "@/components/modals/user-modal";
@@ -22,10 +22,10 @@ export const ModalProvider = () => {
   return (
     <>
       {/* <ExamModal />
+      <UserModal /> */}
       <LocalModal />
-      <EnseignantModal />
-      <DepartementModal />
-    <UserModal /> */}
+      <TeacherModal />
+      <DepartmentModal />
       <SessionModal />
     </>
   );

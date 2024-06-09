@@ -1,10 +1,9 @@
 import NextAuth from "next-auth";
 // import { getUserFromDb } from "@/utils/db";
+import { getUserById } from "@/data/session";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import authConfig from "./auth.config";
-import { getUserById } from "./query";
 import { db } from "./config";
-
 
 export const {
   handlers: { GET, POST },

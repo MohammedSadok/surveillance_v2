@@ -1,10 +1,11 @@
+import { AlertModal } from "@/components/modals/alert-modal";
+import { Button } from "@/components/ui/button";
+import { deleteSession } from "@/data/session";
+import { SessionExam } from "@/lib/schema";
 import { Ban, CheckCircle, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
-import { AlertModal } from "@/components/modals/alert-modal";
-import { Button } from "@/components/ui/button";
-import { SessionExam } from "@/lib/schema";
 
 interface CellActionProps {
   data: SessionExam;
@@ -21,15 +22,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const performAction = async (confirmedAction: Actions) => {
     try {
       setLoading(true);
-      const typeAction = { type: confirmedAction };
-      const endpoint =
-        confirmedAction === "delete"
-          ? `/api/sessions/${data.id}`
-          : `/api/sessions/${data.id}`;
-      // await axios[confirmedAction === "delete" ? "delete" : "post"](
-      //   endpoint,
-      //   typeAction
-      // );
+      if (confirmedAction === "delete") await deleteSession(data.id);
       toast.success(
         confirmedAction === "delete"
           ? "Session supprimée."

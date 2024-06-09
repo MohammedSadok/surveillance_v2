@@ -19,14 +19,15 @@ import {
 import { useModal } from "@/hooks/useModalStore";
 import { LocationSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
+
+import { createLocation, updateLocation } from "@/data/location";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Input } from "../ui/input";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
-import { Loader2 } from "lucide-react";
 
 const LocalModal = () => {
   const { isOpen, onClose, type, data } = useModal();
@@ -53,8 +54,8 @@ const LocalModal = () => {
 
   const onSubmit = async (values: z.infer<typeof LocationSchema>) => {
     try {
-      if (type === "createBuilding") await axios.post("/api/location", values);
-      else await axios.patch(`/api/location/${building?.id}`, values);
+      if (type === "createBuilding") await createLocation(values);
+      else if (building) await updateLocation({ ...values, id: building.id });
       form.reset();
       router.refresh();
       onClose();

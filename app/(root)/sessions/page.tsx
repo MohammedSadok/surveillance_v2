@@ -1,6 +1,6 @@
 import { SessionClient } from "./components/Client";
 
-import { gestSessions } from "@/lib/query";
+import { gestSessions } from "@/data/session";
 
 const SessionsPage = async () => {
   const sessions = await gestSessions();

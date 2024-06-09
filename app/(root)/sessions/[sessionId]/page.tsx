@@ -1,7 +1,6 @@
 import Schedule from "@/components/Schedule";
-import { Heading } from "@/components/ui/heading";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getDays } from "@/lib/query";
+import { gestSessionById, getDays } from "@/data/session";
 
 interface ExamsPageProps {
   params: { sessionId: string };
@@ -9,22 +8,11 @@ interface ExamsPageProps {
 const ExamsPage = async ({ params }: ExamsPageProps) => {
   const id = parseInt(params.sessionId);
   const days = await getDays(id);
-
-  // const formattedDays: sessionDays[] = days.map((item) => ({
-  //   ...item,
-  //   date: format(item.date, "dd/MM/yyyy"),
-  // }));
-
+  const session = await gestSessionById(id);
   return (
     <div className="flex-1 space-y-4 pt-2">
-      <div className="flex items-center justify-between">
-        <Heading
-          title={`Journées (${days.length})`}
-          description="Gérer les journées"
-        />
-      </div>
       <Tabs
-        // defaultValue={!session?.isValidated ? "exam" : "surveillance"}
+        defaultValue={!session?.isValidated ? "exam" : "surveillance"}
         className="space-y-4"
       >
         <div>

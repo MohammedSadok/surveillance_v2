@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { createDepartment, updateDepartment } from "@/data/departement";
 import { useModal } from "@/hooks/useModalStore";
 import { DepartmentSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,17 +48,16 @@ const DepartmentModal = () => {
   const isLoading = form.formState.isSubmitting;
 
   const onSubmit = async (values: z.infer<typeof DepartmentSchema>) => {
-    console.log(values);
-    // try {
-    //   if (type === "createDepartment")
-    //     await axios.post("/api/departments", values);
-    //   else await axios.patch(`/api/departments/${department?.id}`, values);
-    //   form.reset();
-    //   router.refresh();
-    //   onClose();
-    // } catch (error) {
-    //   console.log(error);
-    // }
+    try {
+      if (type === "createDepartment") await createDepartment(values.name);
+      else if (department)
+        await updateDepartment({ id: department.id, ...values });
+      form.reset();
+      router.refresh();
+      onClose();
+    } catch (error) {
+      console.log(error);
+    }
   };
   const handleClose = () => {
     form.reset();

@@ -1,9 +1,9 @@
 "use server";
 import { and, eq } from "drizzle-orm";
 
-import { db } from "./config";
-import { SessionExam, sessionExam, timeSlot, users } from "./schema";
-import { DayWithTimeSlots } from "./utils";
+import { db } from "@/lib/config";
+import { SessionExam, sessionExam, timeSlot, users } from "@/lib/schema";
+import { DayWithTimeSlots } from "@/lib/utils";
 
 export const LoginUser = async (email: string, password: string) => {
   const result = await db.query.users.findFirst({
@@ -29,6 +29,21 @@ export const getUserById = async (id: number) => {
 export const gestSessions = async () => {
   const result = await db.select().from(sessionExam);
   return result;
+};
+export const gestSessionById = async (sessionId: number) => {
+  const result = await db.query.sessionExam.findFirst({
+    where: eq(sessionExam.id, sessionId),
+  });
+  return result;
+};
+
+export const deleteSession = async (sessionId: number) => {
+  try {
+    await db.delete(sessionExam).where(eq(sessionExam.id, sessionId));
+  } catch (error) {
+    console.error("Error deleting session:", error);
+    throw error;
+  }
 };
 export const createSession = async (session: CreateSessionType) => {
   try {
@@ -74,6 +89,7 @@ export const createSession = async (session: CreateSessionType) => {
       );
     }
     await db.insert(timeSlot).values(timeSlots);
+    return sessionExamId;
   } catch (error) {
     console.error("Error creating session:", error);
     throw error;
@@ -95,6 +111,7 @@ export const getDays = async (
         acc[dateKey] = { date: dateKey, timeSlots: [] };
       }
       acc[dateKey].timeSlots.push({
+        id: slot.id,
         period: slot.period,
         timePeriod: slot.timePeriod,
       });

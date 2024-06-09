@@ -17,6 +17,7 @@ export function transformTime(inputTime: string): string {
   return transformedTime;
 }
 type TimeSlot = {
+  id: number;
   period: string;
   timePeriod: string;
 };
@@ -24,4 +25,71 @@ type TimeSlot = {
 export type DayWithTimeSlots = {
   date: string;
   timeSlots: TimeSlot[];
+};
+export const expectedColumns = [
+  "CODE_ETUDIANT",
+  "NOM",
+  "PRENOM",
+  "CIN",
+  "CNE",
+  "DATE_NAISSANCE",
+  "COD_ELP",
+  "LIB_ELP",
+  "VERSION_ETAPE",
+  "CODE_ETAPE",
+];
+
+export type RawData = [
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string
+];
+
+export interface GroupedData {
+  [optionId: string]: {
+    name: string;
+    modules: {
+      [moduleId: string]: {
+        name: string;
+      };
+    };
+  };
+}
+
+export const groupData = (data: RawData[]): GroupedData => {
+  return data.reduce((acc, row) => {
+    const [
+      codeEtudiant,
+      lastName,
+      firstName,
+      cin,
+      cne,
+      birthDate,
+      codElp,
+      libElp,
+      versionEtape,
+      codeEtape,
+    ] = row;
+
+    if (!acc[codeEtape]) {
+      acc[codeEtape] = {
+        name: versionEtape,
+        modules: {},
+      };
+    }
+
+    if (!acc[codeEtape].modules[codElp]) {
+      acc[codeEtape].modules[codElp] = {
+        name: libElp,
+      };
+    }
+    return acc;
+  }, {} as GroupedData);
 };

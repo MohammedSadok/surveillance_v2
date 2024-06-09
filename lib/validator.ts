@@ -12,6 +12,7 @@ const TimeRangeSchema = z
   });
 
 export const SessionSchema = z.object({
+  urlFile: z.instanceof(File).nullable(),
   type: z.string({
     message: "Veuillez sélectionner un type pour la session d'examens.",
   }),
@@ -53,7 +54,7 @@ export const TeacherSchema = z.object({
   email: z.string().email({
     message: "Veuillez entrer une adresse e-mail valide.",
   }),
-  isDispense: z.boolean().default(false).optional(),
+  isDispense: z.boolean().default(false),
   departmentId: z.number().int().min(1, {
     message: "Veuillez sélectionner un département.",
   }),

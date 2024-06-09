@@ -1,4 +1,4 @@
-import { getDays } from "@/lib/query";
+import { getDays } from "@/data/session";
 
 const page = async () => {
   const result = await getDays(5);

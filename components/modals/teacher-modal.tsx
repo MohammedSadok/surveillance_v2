@@ -16,10 +16,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { createTeacher, updateTeacher } from "@/data/teacher";
 import { useModal } from "@/hooks/useModalStore";
 import { TeacherSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -58,8 +58,8 @@ const TeacherModal = () => {
 
   const onSubmit = async (values: z.infer<typeof TeacherSchema>) => {
     try {
-      if (type === "createTeacher") await axios.post("/api/teacher", values);
-      else await axios.patch(`/api/teacher/${teacher?.id}`, values);
+      if (type === "createTeacher") await createTeacher(values);
+      else if (teacher) await updateTeacher({ ...values, id: teacher.id });
       form.reset();
       router.refresh();
       onClose();

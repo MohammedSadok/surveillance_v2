@@ -2,7 +2,7 @@
 
 import { DEFAULT_LOGIN_REDIRECT } from "@/config/routes";
 import { signIn } from "@/lib/auth";
-import { getUserByEmail } from "@/lib/query";
+import { getUserByEmail } from "@/data/session";
 import { LoginSchema } from "@/lib/validator";
 import { AuthError } from "next-auth";
 // import { signIn } from "next-auth/react";
