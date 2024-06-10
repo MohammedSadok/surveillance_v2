@@ -1,4 +1,6 @@
-import db from "@/lib/db";
+import { getExamsByTimeSlot } from "@/data/exam";
+import { gestSessionById } from "@/data/session";
+import { getTimeSlotById } from "@/data/timeSlot";
 import { ExamClient } from "./components/Client";
 
 type Props = {
@@ -6,31 +8,15 @@ type Props = {
 };
 
 const ExamsPage = async ({ params }: Props) => {
-  const session = await db.sessionExam.findUnique({
-    where: { id: parseInt(params.sessionId) },
-  });
-  const timeSlot = await db.timeSlot.findFirst({
-    where: { id: parseInt(params.timeSlotId) },
-    include: { day: true },
-  });
-
-  const exams = await db.exam.findMany({
-    where: {
-      moduleName: { not: "Rs" },
-      AND: [
-        { moduleName: { not: "Rs" } },
-        { enrolledStudentsCount: { gt: 0 } },
-        { timeSlotId: parseInt(params.timeSlotId) },
-      ],
-    },
-    include: {
-      moduleResponsible: true,
-    },
-  });
+  const session = await gestSessionById(parseInt(params.sessionId));
+  const exams = await getExamsByTimeSlot(parseInt(params.timeSlotId));
+  const timeSlot = await getTimeSlotById(parseInt(params.timeSlotId));
 
   return (
     <div className="flex-1 space-y-4 pt-2">
-      <ExamClient data={exams} timeSlot={timeSlot} session={session} />
+      {session && timeSlot && (
+        <ExamClient data={exams} timeSlot={timeSlot} session={session} />
+      )}
     </div>
   );
 };

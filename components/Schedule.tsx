@@ -7,11 +7,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { FileDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useRef } from "react";
 
-import { Button } from "./ui/button";
 import { DayWithTimeSlots } from "@/lib/utils";
 
 interface ScheduleProps {
@@ -51,7 +49,7 @@ const Schedule: React.FC<ScheduleProps> = ({ sessionDays, sessionId }) => {
           {sessionDays.map((item) => (
             <TableRow key={item.date} className="py-4">
               <TableCell className="border text-center">{item.date}</TableCell>
-              {/* {item.timeSlot.map((timeSlotItem) => (
+              {item.timeSlots.map((timeSlotItem) => (
                 <TableCell
                   key={timeSlotItem.id}
                   className="border text-center cursor-pointer hover:bg-gray-300"
@@ -61,15 +59,15 @@ const Schedule: React.FC<ScheduleProps> = ({ sessionDays, sessionId }) => {
                     })
                   }
                 >
-                  {timeSlotItem.Exam.map((exam) =>
+                  {/* {timeSlotItem.Exam.map((exam) =>
                     exam.moduleName !== "Rs" && exam.moduleName ? (
                       <div key={exam.id}>
                         <p>{exam.moduleName + " / " + exam.options}</p>
                       </div>
                     ) : null
-                  )}
+                  )} */}
                 </TableCell>
-              ))} */}
+              ))}
             </TableRow>
           ))}
         </TableBody>

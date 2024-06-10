@@ -5,16 +5,15 @@ import { DataTable } from "@/components/ui/data-table";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { useModal } from "@/hooks/useModalStore";
-import { ExamType, timeSlotType } from "@/lib/types";
-import { SessionExam } from "@prisma/client";
+import { Exam, SessionExam, TimeSlot } from "@/lib/schema";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { columns } from "./Columns";
 
 interface ExamClientProps {
-  session: SessionExam | null;
-  data: ExamType[];
-  timeSlot: timeSlotType | null;
+  session: SessionExam;
+  data: Exam[];
+  timeSlot: TimeSlot;
 }
 
 export const ExamClient: React.FC<ExamClientProps> = ({
@@ -29,7 +28,7 @@ export const ExamClient: React.FC<ExamClientProps> = ({
         {timeSlot && (
           <Heading
             title={`Examens (${data.length})`}
-            description={`le ${format(timeSlot.day.date, "EEEE d-MM-y")} de ${
+            description={`le ${format(timeSlot.date, "EEEE d-MM-y")} de ${
               timeSlot?.period
             } `}
           />
@@ -41,7 +40,7 @@ export const ExamClient: React.FC<ExamClientProps> = ({
         )}
       </div>
       <Separator />
-      <DataTable searchKey="moduleName" columns={columns} data={data} />
+      <DataTable searchKey="moduleId" columns={columns} data={data} />
     </>
   );
 };

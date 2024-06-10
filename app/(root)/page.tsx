@@ -1,8 +1,11 @@
-import { getDays } from "@/data/session";
+import { createOccupiedTeacherInPeriod } from "@/data/teacher";
 
 const page = async () => {
-  const result = await getDays(5);
-  console.log(result[0]);
+  await createOccupiedTeacherInPeriod({
+    teacherId: 1,
+    cause: "TT",
+    timeSlotId: 129,
+  });
   return <div>page</div>;
 };
 

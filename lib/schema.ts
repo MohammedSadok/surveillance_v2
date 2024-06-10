@@ -63,7 +63,7 @@ export const moduleTable = mysqlTable(
 
 export const exam = mysqlTable("exam", {
   id: int("id").autoincrement().primaryKey(),
-  module: varchar("module", { length: 20 })
+  moduleId: varchar("module", { length: 20 })
     .references(() => moduleTable.id, {
       onDelete: "cascade",
       onUpdate: "cascade",

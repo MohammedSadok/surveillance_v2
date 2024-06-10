@@ -15,34 +15,38 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { getLocationsForExamManual } from "@/data/exam";
-import { useModal } from "@/hooks/useModalStore";
-import { Student } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import { ExamSchema } from "@/lib/validator";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Department, Location, Teacher } from "@prisma/client";
-import { CaretSortIcon } from "@radix-ui/react-icons";
-import axios from "axios";
-import { CheckIcon, Loader2 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
-import { read, utils } from "xlsx";
-import * as z from "zod";
-import { FormError } from "../auth/form-error";
-import { Button } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
+
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "../ui/command";
-import { Input } from "../ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { getDepartments } from "@/data/departement";
+import { createExam } from "@/data/exam";
+import { getFreeLocations } from "@/data/location";
+import { getModules, getNumberOfStudentsInModule } from "@/data/modules";
+import { getFreeTeachersByDepartment } from "@/data/teacher";
+import { useModal } from "@/hooks/useModalStore";
+import { Department, Location, ModuleType, Teacher } from "@/lib/schema";
+import { cn } from "@/lib/utils";
+import { ExamSchema } from "@/lib/validator";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowUpDown, Check, Loader2 } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { FormError } from "../auth/form-error";
+import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import { ScrollArea } from "../ui/scroll-area";
 import {
   Select,
@@ -56,14 +60,14 @@ const ExamModal = () => {
   const { isOpen, onClose, type, data } = useModal();
   const { exam } = data;
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [error, setError] = useState<string | undefined>("");
+  const [modules, setModules] = useState<Omit<ModuleType, "optionId">[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [department, setDepartment] = useState<number | null>(null);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [error, setError] = useState<string | undefined>("");
   const [studentNumber, setStudentNumber] = useState<number>(0);
-  const [teachers, setTeachers] = useState<Teacher[] | undefined>();
   const [open, setOpen] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>();
-  const params = useParams<{ timeSlotId: string }>();
+  const params = useParams<{ timeSlotId: string; sessionId: string }>();
   const router = useRouter();
   const isModalOpen = isOpen && type === "createExam";
 
@@ -76,10 +80,14 @@ const ExamModal = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_APP_URL}/api/departments`
-        );
-        setDepartments(response.data);
+        const response = await getDepartments();
+        const modules = await getModules();
+        if (params.timeSlotId) {
+          const locations = await getFreeLocations(parseInt(params.timeSlotId));
+          setLocations(locations);
+        }
+        setDepartments(response);
+        setModules(modules);
       } catch (error) {
         console.error(
           "Erreur lors de la récupération des départements :",
@@ -88,7 +96,8 @@ const ExamModal = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [params.timeSlotId]);
+
   const handleCheckboxChange = (checked: boolean, locationId: number) => {
     if (checked) {
       const location = locations.find((loc) => loc.id === locationId);
@@ -106,28 +115,16 @@ const ExamModal = () => {
       }
     }
   };
-  useEffect(() => {
-    const fetchData = async () => {
-      const { freeLocations } = await getLocationsForExamManual(
-        parseInt(params.timeSlotId)
-      );
-      setLocations(freeLocations);
-    };
-    if (studentNumber > 0) fetchData();
-  }, [studentNumber, params.timeSlotId]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (department !== null) {
-          const response = await axios.post(
-            `${process.env.NEXT_PUBLIC_APP_URL}/api/monitoring`,
-            {
-              departmentId: department,
-              timeSlotId: parseInt(params.timeSlotId),
-            }
+          const freeTeachers = await getFreeTeachersByDepartment(
+            parseInt(params.timeSlotId),
+            department
           );
-          setTeachers(response.data.freeTeachers);
+          setTeachers(freeTeachers);
         }
       } catch (error) {
         console.error(
@@ -136,94 +133,47 @@ const ExamModal = () => {
         );
       }
     };
-    if (department !== undefined) {
+    if (department !== null && params.timeSlotId) {
       fetchData();
-      setSelectedTeacher(null);
     }
   }, [department, isOpen, params.timeSlotId]);
 
   useEffect(() => {
     form.setValue("timeSlotId", parseInt(params.timeSlotId));
   }, [exam, form, params.timeSlotId, isOpen]);
+  const moduleId = form.watch("moduleId");
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const number = await getNumberOfStudentsInModule(
+          moduleId,
+          parseInt(params.sessionId)
+        );
+        setStudentNumber(number);
+      } catch (error) {
+        console.error("Erreur lors de la sélection des enseignants :", error);
+      }
+    };
+    if ((params.sessionId, moduleId)) fetchData();
+  }, [moduleId, params.sessionId]);
 
   const isLoading = form.formState.isSubmitting;
 
   const onSubmit = async (values: z.infer<typeof ExamSchema>) => {
-    if (studentNumber > 0 && values.manual) {
-      setError("il reste des etudiants");
-      return;
+    try {
+      if (type === "createExam") await createExam(values);
+      // else if (exam) await updateExam({ ...values, id: exam.id });
+      form.reset();
+      router.refresh();
+      onClose();
+    } catch (error) {
+      console.log(error);
     }
-    setError(undefined);
-    const file = values.urlFile as File;
-    const reader = new FileReader();
-
-    reader.onload = async (event) => {
-      const target = event?.target;
-      if (target instanceof FileReader) {
-        const binaryString = target.result as string;
-        const workbook = read(binaryString, { type: "binary" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-        // Convert the sheet data to JSON
-        const data: any[] = utils.sheet_to_json(sheet, { header: 1 }); // Assuming the first row contains headers
-
-        // Skip the first 34 rows
-        const trimmedData = data.slice(34);
-
-        const students: Student[] = trimmedData.map((element: any) => {
-          const etudiant: Student = {
-            number: element[0], // Assuming the first column contains student numbers
-            firstName: element[1], // Assuming the second column contains first names
-            lastName: element[2], // Assuming the third column contains last names
-          };
-          return etudiant;
-        });
-
-        const newValues = {
-          ...values,
-          timeSlotId: parseInt(params.timeSlotId),
-          students: students,
-          enrolledStudentsCount: students.length, // Use the length of trimmedData instead of data
-        };
-
-        try {
-          const response = await axios.post("/api/exams", newValues);
-          if (response.data.error) {
-            toast.error(response.data.error);
-          }
-
-          form.reset();
-          setSelectedTeacher(null);
-          router.refresh();
-          onClose();
-        } catch (error) {
-          console.log(error);
-        }
-      }
-    };
-    reader.readAsArrayBuffer(file);
   };
 
   const handleClose = () => {
     form.reset();
     onClose();
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files && event.target.files[0];
-    if (file) {
-      form.setValue("urlFile", file);
-      // Calculate and display the number of rows
-      const fileReader = new FileReader();
-      fileReader.onload = function () {
-        const arrayBuffer = this.result;
-        const workbook = read(arrayBuffer, { type: "binary" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data: any[] = utils.sheet_to_json(sheet, { header: 1 });
-        setStudentNumber(data.length - 34);
-      };
-      fileReader.readAsArrayBuffer(file);
-    }
   };
 
   return (
@@ -237,52 +187,26 @@ const ExamModal = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="px-6 space-y-4">
-              <FormField
-                defaultValue=""
-                control={form.control}
-                name="moduleName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom du module</FormLabel>
-                    <Input
-                      disabled={isLoading}
-                      placeholder="Entrez le nom du module"
-                      {...field}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                defaultValue=""
-                control={form.control}
-                name="options"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Options</FormLabel>
-                    <Input
-                      disabled={isLoading}
-                      placeholder="Entrez la liste des filières"
-                      {...field}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <div className="space-y-2">
-                <FormLabel>Responsable du module</FormLabel>
-                <div className="grid gap-2 grid-cols-10">
+                <FormLabel
+                  className={cn(
+                    form.formState.errors.responsibleId ? "text-red-500" : ""
+                  )}
+                >
+                  Résponsable du module
+                </FormLabel>
+                <div className="flex justify-center items-center space-x-2">
                   <Select
                     onValueChange={(value) => setDepartment(Number(value))}
                   >
                     <FormControl>
-                      <SelectTrigger className="col-span-4">
+                      <SelectTrigger className="w-1/3">
                         <SelectValue placeholder="Sélectionnez le département" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {departments.map((item) => (
-                        <SelectItem value={item.id.toString()} key={item.id}>
+                      {departments.map((item, index) => (
+                        <SelectItem value={item.id + ""} key={item.id}>
                           {item.name}
                         </SelectItem>
                       ))}
@@ -292,83 +216,129 @@ const ExamModal = () => {
                     control={form.control}
                     name="responsibleId"
                     render={({ field }) => (
-                      <FormItem className="col-span-6">
-                        <Popover open={open} onOpenChange={setOpen}>
+                      <FormItem className="flex flex-col w-2/3">
+                        <Popover>
                           <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-label="Charger les enseignants..."
-                              aria-expanded={open}
-                              className="flex-1 justify-between w-full"
-                            >
-                              {selectedTeacher
-                                ? selectedTeacher.firstName +
-                                  " " +
-                                  selectedTeacher.lastName
-                                : "Charger les enseignants..."}
-                              <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "justify-between",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value
+                                  ? teachers.find(
+                                      (teacher) => teacher.id === field.value
+                                    )?.lastName
+                                  : "Select enseignant"}
+                                <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0">
                             <Command>
-                              <CommandInput placeholder="Rechercher des enseignants..." />
-                              <CommandEmpty>
-                                Aucun enseignant trouvé.
-                              </CommandEmpty>
-                              <CommandGroup>
-                                <ScrollArea className="h-[200px]">
-                                  {teachers?.map((teacher) => (
+                              <CommandInput placeholder="Search language..." />
+                              <CommandEmpty>No language found.</CommandEmpty>
+                              <CommandList>
+                                <CommandGroup>
+                                  {teachers.map((teacher) => (
                                     <CommandItem
+                                      value={teacher.id + ""}
                                       key={teacher.id}
                                       onSelect={() => {
-                                        setSelectedTeacher(teacher);
-                                        field.onChange(teacher.id);
-                                        setOpen(false);
+                                        form.setValue(
+                                          "responsibleId",
+                                          teacher.id
+                                        );
                                       }}
                                     >
-                                      {teacher.firstName +
-                                        " " +
-                                        teacher.lastName}
-                                      <CheckIcon
+                                      <Check
                                         className={cn(
-                                          "ml-auto h-4 w-4",
-                                          field.value === teacher.id
+                                          "mr-2 h-4 w-4",
+                                          teacher.id === field.value
                                             ? "opacity-100"
                                             : "opacity-0"
                                         )}
                                       />
+                                      {teacher.firstName +
+                                        " " +
+                                        teacher.lastName}
                                     </CommandItem>
                                   ))}
-                                </ScrollArea>
-                              </CommandGroup>
+                                </CommandGroup>
+                              </CommandList>
                             </Command>
                           </PopoverContent>
                         </Popover>
-                        <FormMessage />
+                        {/* <FormMessage /> */}
                       </FormItem>
                     )}
                   />
                 </div>
               </div>
+
               <FormField
                 control={form.control}
-                name="urlFile"
+                name="moduleId"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col items-start space-y-2 min-w-max">
-                    <FormLabel>Uploader un ficher excel</FormLabel>
-                    <Input
-                      accept=".xlsx, .xls"
-                      type="file"
-                      disabled={isLoading}
-                      placeholder="Entrez le nombre d'étudiants inscrits"
-                      onChange={handleFileChange}
-                    />
-                    <FormMessage />
+                  <FormItem className="flex flex-col w-full">
+                    <FormLabel>Module</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value
+                              ? modules.find(
+                                  (module) => module.id === field.value
+                                )?.name
+                              : "Select module"}
+                            <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search language..." />
+                          <CommandEmpty>No language found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                              {modules.map((module) => (
+                                <CommandItem
+                                  value={module.name}
+                                  key={module.id}
+                                  onSelect={() => {
+                                    form.setValue("moduleId", module.id);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      module.id === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {module.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </FormItem>
                 )}
               />
-              {form.watch("urlFile") && (
+              {form.watch("moduleId") && (
                 <FormField
                   control={form.control}
                   name="manual"

@@ -84,3 +84,19 @@ export const insertStudentsChunk = async (
     students.map((student) => ({ ...student, sessionExamId }))
   );
 };
+
+export const getStudentsInModule = async (
+  moduleId: string,
+  sessionExamId: number
+): Promise<Student[]> => {
+  const result = await db
+    .select()
+    .from(student)
+    .where(
+      and(
+        eq(student.moduleId, moduleId),
+        eq(student.sessionExamId, sessionExamId)
+      )
+    );
+  return result;
+};

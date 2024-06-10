@@ -104,7 +104,7 @@ export const getDays = async (
       .select()
       .from(timeSlot)
       .where(eq(timeSlot.sessionExamId, sessionId))
-      .orderBy(timeSlot.date, timeSlot.period);
+      .orderBy(timeSlot.date);
     const days = result.reduce((acc, slot) => {
       const dateKey = slot.date.toISOString().split("T")[0];
       if (!acc[dateKey]) {

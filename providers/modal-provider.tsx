@@ -2,7 +2,7 @@
 
 import DepartmentModal from "@/components/modals/department-modal";
 import TeacherModal from "@/components/modals/teacher-modal";
-// import ExamModal from "@/components/modals/exam-modal";
+import ExamModal from "@/components/modals/exam-modal";
 import LocalModal from "@/components/modals/local-modal";
 import SessionModal from "@/components/modals/session-modal";
 import { useEffect, useState } from "react";
@@ -21,8 +21,9 @@ export const ModalProvider = () => {
 
   return (
     <>
-      {/* <ExamModal />
+      {/*
       <UserModal /> */}
+      <ExamModal />
       <LocalModal />
       <TeacherModal />
       <DepartmentModal />

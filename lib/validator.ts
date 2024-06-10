@@ -79,11 +79,8 @@ const StudentSchema = z.object({
 });
 
 export const ExamSchema = z.object({
-  moduleName: z.string().min(3, {
-    message: "Le nom doit contenir au moins 3 caractères.",
-  }),
-  options: z.string().min(3, {
-    message: "Le champ des options doit contenir au moins 3 caractères.",
+  moduleId: z.string().min(1, {
+    message: "Le module est requis",
   }),
   responsibleId: z.number().int().min(1, {
     message: "Le responsable du module est requis.",
@@ -91,29 +88,7 @@ export const ExamSchema = z.object({
   timeSlotId: z.number().int().min(1, {
     message: "L'identifiant de l'intervalle de temps est requis.",
   }),
-  urlFile: z.instanceof(File).nullable(),
-  manual: z.boolean().default(false).optional(),
-  locations: z.array(z.number()),
-});
-
-export const ExamSchemaApi = z.object({
-  moduleName: z.string().min(3, {
-    message: "Le nom doit contenir au moins 3 caractères.",
-  }),
-  options: z.string().min(3, {
-    message: "Le champ des options doit contenir au moins 3 caractères.",
-  }),
-  enrolledStudentsCount: z.number().int().min(1, {
-    message: "Le nombre d'étudiants doit être positif.",
-  }),
-  responsibleId: z.number().int().min(1, {
-    message: "Le responsable du module est requis.",
-  }),
-  timeSlotId: z.number().int().min(1, {
-    message: "L'identifiant de l'intervalle de temps est requis.",
-  }),
-  students: z.array(StudentSchema),
-  manual: z.boolean().default(false).optional(),
+  manual: z.boolean().default(false),
   locations: z.array(z.number()),
 });
 
