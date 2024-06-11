@@ -101,7 +101,27 @@ export const student = mysqlTable("student", {
     })
     .notNull(),
 });
-
+export const studentExamLocation = mysqlTable("studentExamLocation", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: int("locationId")
+    .references(() => location.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
+    .notNull(),
+  studentId: int("studentId")
+    .references(() => student.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
+    .notNull(),
+  examId: int("examId")
+    .references(() => exam.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
+    .notNull(),
+});
 export const department = mysqlTable("department", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
@@ -191,3 +211,4 @@ export type Teacher = typeof teacher.$inferSelect;
 export type Location = typeof location.$inferSelect;
 export type Option = typeof option.$inferSelect;
 export type Student = typeof student.$inferSelect;
+export type studentExamLocation = typeof studentExamLocation.$inferSelect;

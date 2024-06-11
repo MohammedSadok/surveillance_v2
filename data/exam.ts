@@ -6,6 +6,7 @@ import {
   moduleTable,
   occupiedTeacher,
   student,
+  studentExamLocation,
   teacher,
 } from "@/lib/schema";
 import { and, eq, sql } from "drizzle-orm";
@@ -13,6 +14,7 @@ import {
   getFreeLocationsForModule,
   reserveLocationsForModule,
 } from "./location";
+import { getStudentsInModule } from "./modules";
 import { createOccupiedTeacherInPeriod } from "./teacher";
 import { getTimeSlotById } from "./timeSlot";
 
@@ -26,13 +28,29 @@ export const createExam = async (newExam: ExamType) => {
       newExam.moduleId,
       newExam.timeSlotId
     );
-    const createdExam = await db.insert(exam).values(newExam);
-    await createOccupiedTeacherInPeriod({
-      teacherId: newExam.responsibleId,
-      cause: "TT",
-      timeSlotId: newExam.timeSlotId,
-    });
-    await reserveLocationsForModule(locations, createdExam[0].insertId);
+    const selectedTimeSlot = await getTimeSlotById(newExam.timeSlotId);
+    if (selectedTimeSlot) {
+      const createdExam = await db.insert(exam).values(newExam);
+      await createOccupiedTeacherInPeriod({
+        teacherId: newExam.responsibleId,
+        cause: "TT",
+        timeSlotId: newExam.timeSlotId,
+      });
+      const students = await getStudentsInModule(
+        newExam.moduleId,
+        selectedTimeSlot.sessionExamId
+      );
+
+      const studentExamLocationsTable = students.flatMap((student) =>
+        locations.map((location) => ({
+          studentId: student.id,
+          examId: createdExam[0].insertId,
+          locationId: location.id,
+        }))
+      );
+      await db.insert(studentExamLocation).values(studentExamLocationsTable);
+      await reserveLocationsForModule(locations, createdExam[0].insertId);
+    }
   } catch (error) {
     console.error("Error creating exam:", error);
     throw error;

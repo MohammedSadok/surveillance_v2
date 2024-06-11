@@ -316,8 +316,8 @@ const ExamModal = () => {
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
                         <Command>
-                          <CommandInput placeholder="Search language..." />
-                          <CommandEmpty>No language found.</CommandEmpty>
+                          <CommandInput placeholder="Chércher le module..." />
+                          <CommandEmpty>No module found.</CommandEmpty>
                           <CommandList>
                             <CommandGroup>
                               {modules.map((module) => (

@@ -19,6 +19,7 @@ const ExamsPage = async ({ params }: ExamsPageProps) => {
           <TabsList>
             <TabsTrigger value="exam">Exam</TabsTrigger>
             <TabsTrigger value="surveillance">Surveillance</TabsTrigger>
+            <TabsTrigger value="students">Étudiants</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="exam">
@@ -27,6 +28,7 @@ const ExamsPage = async ({ params }: ExamsPageProps) => {
         <TabsContent value="surveillance">
           {/* <TeacherMonitoring sessionDays={days} sessionId={params.sessionId} /> */}
         </TabsContent>
+        <TabsContent value="students"></TabsContent>
       </Tabs>
     </div>
   );
