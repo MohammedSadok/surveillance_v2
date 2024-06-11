@@ -9,10 +9,11 @@ import { Exam, SessionExam, TimeSlot } from "@/lib/schema";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { columns } from "./Columns";
+import { ExamWithDetails } from "@/data/exam";
 
 interface ExamClientProps {
   session: SessionExam;
-  data: Exam[];
+  data: ExamWithDetails[];
   timeSlot: TimeSlot;
 }
 

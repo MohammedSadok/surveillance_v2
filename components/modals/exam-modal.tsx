@@ -32,7 +32,7 @@ import {
 import { getDepartments } from "@/data/departement";
 import { createExam } from "@/data/exam";
 import { getFreeLocations } from "@/data/location";
-import { getModules, getNumberOfStudentsInModule } from "@/data/modules";
+import { getModulesForExam, getNumberOfStudentsInModule } from "@/data/modules";
 import { getFreeTeachersByDepartment } from "@/data/teacher";
 import { useModal } from "@/hooks/useModalStore";
 import { Department, Location, ModuleType, Teacher } from "@/lib/schema";
@@ -81,13 +81,11 @@ const ExamModal = () => {
     const fetchData = async () => {
       try {
         const response = await getDepartments();
-        const modules = await getModules();
         if (params.timeSlotId) {
           const locations = await getFreeLocations(parseInt(params.timeSlotId));
           setLocations(locations);
         }
         setDepartments(response);
-        setModules(modules);
       } catch (error) {
         console.error(
           "Erreur lors de la récupération des départements :",
@@ -139,7 +137,18 @@ const ExamModal = () => {
   }, [department, isOpen, params.timeSlotId]);
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (params.timeSlotId) {
+          const modules = await getModulesForExam(parseInt(params.timeSlotId));
+          setModules(modules);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la sélection des modules :", error);
+      }
+    };
     form.setValue("timeSlotId", parseInt(params.timeSlotId));
+    fetchData();
   }, [exam, form, params.timeSlotId, isOpen]);
   const moduleId = form.watch("moduleId");
   useEffect(() => {

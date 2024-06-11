@@ -1,4 +1,4 @@
-import { getExamsByTimeSlot } from "@/data/exam";
+import { getExamsWithDetailsAndCounts } from "@/data/exam";
 import { gestSessionById } from "@/data/session";
 import { getTimeSlotById } from "@/data/timeSlot";
 import { ExamClient } from "./components/Client";
@@ -9,7 +9,8 @@ type Props = {
 
 const ExamsPage = async ({ params }: Props) => {
   const session = await gestSessionById(parseInt(params.sessionId));
-  const exams = await getExamsByTimeSlot(parseInt(params.timeSlotId));
+  const exams = await getExamsWithDetailsAndCounts(parseInt(params.timeSlotId));
+  console.log("=>  ExamsPage  exams:", exams);
   const timeSlot = await getTimeSlotById(parseInt(params.timeSlotId));
 
   return (

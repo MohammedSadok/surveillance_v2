@@ -4,8 +4,7 @@ import { AlertModal } from "@/components/modals/alert-modal";
 // import PrintStudentPresent from "@/components/print/PrintStudentPresent";
 // import PrintStudents from "@/components/print/PrintStudents";
 import { Button } from "@/components/ui/button";
-import { deleteExam } from "@/data/exam";
-import { Exam } from "@/lib/schema";
+import { deleteExam, ExamWithDetails } from "@/data/exam";
 // import { getStudentsForExam } from "@/data/exam";
 // import { ExamType, PageTypeStudent } from "@/lib/types";
 
@@ -15,7 +14,7 @@ import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useReactToPrint } from "react-to-print";
 interface CellActionProps {
-  data: Exam;
+  data: ExamWithDetails;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
@@ -44,7 +43,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const onConfirm = async () => {
     try {
       setLoading(true);
-      await deleteExam(data.id);
+      await deleteExam(data.examId);
       toast.success("Examen supprimé.");
       router.refresh();
     } catch (error) {

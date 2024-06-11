@@ -1,13 +1,20 @@
 "use server";
 import { db } from "@/lib/config";
-import { Exam, exam } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import {
+  Exam,
+  exam,
+  moduleTable,
+  occupiedTeacher,
+  student,
+  teacher,
+} from "@/lib/schema";
+import { and, eq, sql } from "drizzle-orm";
 import {
   getFreeLocationsForModule,
   reserveLocationsForModule,
 } from "./location";
 import { createOccupiedTeacherInPeriod } from "./teacher";
-import { getTimeSlotsInSameDayAndPeriod } from "./timeSlot";
+import { getTimeSlotById } from "./timeSlot";
 
 export type ExamType = {
   locations: number[];
@@ -67,7 +74,19 @@ export const getExamsByTimeSlot = async (
 
 export const deleteExam = async (id: number) => {
   try {
-    await db.delete(exam).where(eq(exam.id, id));
+    const deleteExam = await getExam(id);
+    if (deleteExam)
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(occupiedTeacher)
+          .where(
+            and(
+              eq(occupiedTeacher.timeSlotId, deleteExam.timeSlotId),
+              eq(occupiedTeacher.cause, "TT")
+            )
+          );
+        await tx.delete(exam).where(eq(exam.id, id));
+      });
   } catch (error) {
     console.error("Error deleting exam:", error);
     throw error;
@@ -81,4 +100,45 @@ export const updateExam = async (newExam: Exam) => {
     console.error("Error updating exam:", error);
     throw error;
   }
+};
+export const getExamsWithDetailsAndCounts = async (
+  timeSlotId: number
+): Promise<ExamWithDetails[]> => {
+  // Assuming you have a function getTimeSlotById to get details of a time slot
+  const selectedTimeSlot = await getTimeSlotById(timeSlotId);
+
+  if (selectedTimeSlot) {
+    const result = await db
+      .select({
+        examId: exam.id,
+        moduleId: exam.moduleId,
+        moduleName: moduleTable.name,
+        responsibleName: teacher.lastName,
+        studentCount: sql<number>`count(${student.id})`.mapWith(Number),
+      })
+      .from(exam)
+      .innerJoin(moduleTable, eq(exam.moduleId, moduleTable.id))
+      .innerJoin(teacher, eq(exam.responsibleId, teacher.id))
+      .leftJoin(
+        student,
+        and(
+          eq(student.sessionExamId, selectedTimeSlot.sessionExamId),
+          eq(student.moduleId, exam.moduleId)
+        )
+      )
+      .where(eq(exam.timeSlotId, timeSlotId))
+      .groupBy(exam.id, moduleTable.id, teacher.id);
+
+    return result;
+  }
+
+  return [];
+};
+
+export type ExamWithDetails = {
+  examId: number;
+  moduleId: string;
+  moduleName: string;
+  responsibleName: string;
+  studentCount: number;
 };

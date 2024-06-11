@@ -1,34 +1,26 @@
 "use client";
 
-import { Exam } from "@/lib/schema";
+import { ExamWithDetails } from "@/data/exam";
 import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./CellAction";
 
-export const columns: ColumnDef<Exam>[] = [
+export const columns: ColumnDef<ExamWithDetails>[] = [
   {
     accessorKey: "moduleId",
+    header: "Id",
+  },
+  {
+    accessorKey: "moduleName",
     header: "Nom du module",
   },
   {
-    accessorKey: "options",
-    header: "Module",
-  },
-  {
-    accessorKey: "enrolledStudentsCount",
+    accessorKey: "studentCount",
     header: "Nombre d'étudiants inscrits",
   },
-  // {
-  //   accessorKey: "responsable_module",
-  //   header: "Responsable de module",
-  //   cell: ({ row }) => (
-  //     <p>
-  //       Pr.
-  //       {row.original.moduleResponsible?.lastName +
-  //         " " +
-  //         row.original.moduleResponsible?.firstName}
-  //     </p>
-  //   ),
-  // },
+  {
+    accessorKey: "responsibleName",
+    header: "Responsable du module",
+  },
   {
     id: "actions",
     cell: ({ row }) => <CellAction data={row.original} />,
