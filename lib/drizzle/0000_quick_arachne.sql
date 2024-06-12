@@ -17,11 +17,16 @@ CREATE TABLE `location` (
 	`type` enum('CLASSROOM', 'AMPHITHEATER') NOT NULL,
 	CONSTRAINT `location_id` PRIMARY KEY(`id`)
 ) ENGINE = InnoDB;
+CREATE TABLE `moduleOption` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`moduleId` varchar(20) NOT NULL,
+	`optionId` varchar(20) NOT NULL,
+	CONSTRAINT `moduleOption_id` PRIMARY KEY(`id`)
+) ENGINE = InnoDB;
 CREATE TABLE `module` (
 	`id` varchar(20) NOT NULL,
 	`name` varchar(50) NOT NULL,
-	`optionId` varchar(20) NOT NULL,
-	CONSTRAINT `module_id_name_pk` PRIMARY KEY(`id`, `optionId`)
+	CONSTRAINT `module_id` PRIMARY KEY(`id`)
 ) ENGINE = InnoDB;
 CREATE TABLE `monitoring` (
 	`id` int AUTO_INCREMENT NOT NULL,
@@ -64,12 +69,20 @@ CREATE TABLE `sessionExam` (
 ) ENGINE = InnoDB;
 CREATE TABLE `student` (
 	`id` int AUTO_INCREMENT NOT NULL,
-	`cin` varchar(10) NOT NULL,
+	`cne` varchar(20) NOT NULL,
 	`firstName` varchar(50) NOT NULL,
 	`lastName` varchar(50) NOT NULL,
 	`sessionExamId` int NOT NULL,
 	`moduleId` varchar(20) NOT NULL,
 	CONSTRAINT `student_id` PRIMARY KEY(`id`)
+) ENGINE = InnoDB;
+CREATE TABLE `studentExamLocation` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`cne` varchar(20) NOT NULL,
+	`numberOfStudent` int NOT NULL,
+	`locationId` int NOT NULL,
+	`examId` int NOT NULL,
+	CONSTRAINT `studentExamLocation_id` PRIMARY KEY(`id`)
 ) ENGINE = InnoDB;
 CREATE TABLE `teacher` (
 	`id` int AUTO_INCREMENT NOT NULL,
@@ -104,8 +117,10 @@ ALTER TABLE `exam`
 ADD CONSTRAINT `exam_timeSlotId_timeSlot_id_fk` FOREIGN KEY (`timeSlotId`) REFERENCES `timeSlot`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `exam`
 ADD CONSTRAINT `exam_responsibleId_teacher_id_fk` FOREIGN KEY (`responsibleId`) REFERENCES `teacher`(`id`) ON DELETE cascade ON UPDATE cascade;
-ALTER TABLE `module`
-ADD CONSTRAINT `module_optionId_option_id_fk` FOREIGN KEY (`optionId`) REFERENCES `option`(`id`) ON DELETE cascade ON UPDATE cascade;
+ALTER TABLE `moduleOption`
+ADD CONSTRAINT `moduleOption_moduleId_module_id_fk` FOREIGN KEY (`moduleId`) REFERENCES `module`(`id`) ON DELETE cascade ON UPDATE cascade;
+ALTER TABLE `moduleOption`
+ADD CONSTRAINT `moduleOption_optionId_option_id_fk` FOREIGN KEY (`optionId`) REFERENCES `option`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `monitoring`
 ADD CONSTRAINT `monitoring_examId_exam_id_fk` FOREIGN KEY (`examId`) REFERENCES `exam`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `monitoring`
@@ -126,6 +141,10 @@ ALTER TABLE `student`
 ADD CONSTRAINT `student_sessionExamId_sessionExam_id_fk` FOREIGN KEY (`sessionExamId`) REFERENCES `sessionExam`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `student`
 ADD CONSTRAINT `student_moduleId_module_id_fk` FOREIGN KEY (`moduleId`) REFERENCES `module`(`id`) ON DELETE cascade ON UPDATE cascade;
+ALTER TABLE `studentExamLocation`
+ADD CONSTRAINT `studentExamLocation_locationId_location_id_fk` FOREIGN KEY (`locationId`) REFERENCES `location`(`id`) ON DELETE cascade ON UPDATE cascade;
+ALTER TABLE `studentExamLocation`
+ADD CONSTRAINT `studentExamLocation_examId_exam_id_fk` FOREIGN KEY (`examId`) REFERENCES `exam`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `teacher`
 ADD CONSTRAINT `teacher_departmentId_department_id_fk` FOREIGN KEY (`departmentId`) REFERENCES `department`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `timeSlot`

@@ -2,14 +2,13 @@
 import { db } from "@/lib/config";
 import {
   exam,
+  moduleOption,
   moduleTable,
   ModuleType,
-  sessionExam,
-  Student,
   student,
+  StudentType,
 } from "@/lib/schema";
-import { and, eq, isNull, sql } from "drizzle-orm";
-import { getTimeSlotById } from "./timeSlot";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 export const getModules = async (): Promise<Omit<ModuleType, "optionId">[]> => {
   const result = await db
     .selectDistinct({ id: moduleTable.id, name: moduleTable.name })
@@ -32,7 +31,7 @@ export const getNumberOfStudentsInModule = async (
 export const getStudentsInModule = async (
   moduleId: string,
   sessionExamId: number
-): Promise<Student[]> => {
+): Promise<StudentType[]> => {
   const result = await db
     .select()
     .from(student)
@@ -44,31 +43,57 @@ export const getStudentsInModule = async (
     );
   return result;
 };
-
+export const getOptionIdsWithExamsInTimeSlot = async (
+  timeSlotId: number
+): Promise<string[]> => {
+  try {
+    // Sélectionner les identifiants des options avec des examens dans des modules pour ce créneau
+    const optionIdsWithExams = await db
+      .select()
+      .from(moduleOption)
+      .innerJoin(
+        exam,
+        and(
+          eq(exam.moduleId, moduleOption.moduleId),
+          eq(exam.timeSlotId, timeSlotId)
+        )
+      );
+    const result = optionIdsWithExams.map(
+      (option) => option.moduleOption.optionId
+    );
+    return result;
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des identifiants des options avec des examens pour le créneau:",
+      error
+    );
+    throw error;
+  }
+};
 export const getModulesForExam = async (
   timeSlotId: number
 ): Promise<ModuleType[]> => {
   try {
-    const selectedTimeSlot = await getTimeSlotById(timeSlotId);
-    if (selectedTimeSlot) {
-      const result: ModuleType[] = await db
-        .select({
+    const options = await getOptionIdsWithExamsInTimeSlot(timeSlotId);
+    if (options.length > 0) {
+      const result = await db
+        .selectDistinct({
           id: moduleTable.id,
           name: moduleTable.name,
-          optionId: moduleTable.optionId,
         })
         .from(moduleTable)
-        .leftJoin(exam, eq(exam.moduleId, moduleTable.id))
-        .leftJoin(
-          sessionExam,
-          eq(sessionExam.id, selectedTimeSlot.sessionExamId)
-        )
-        .where(isNull(exam.id));
+        .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
+        .where(notInArray(moduleOption.optionId, options));
+      return result;
+    } else {
+      const result = await db.select().from(moduleTable);
       return result;
     }
-    return [];
   } catch (error) {
-    console.error("Error fetching modules for exam:", error);
+    console.error(
+      "Erreur lors de la récupération des modules pour l'examen:",
+      error
+    );
     throw error;
   }
 };

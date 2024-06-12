@@ -41,9 +41,10 @@ export const createExam = async (newExam: ExamType) => {
         selectedTimeSlot.sessionExamId
       );
 
-      const studentExamLocationsTable = students.flatMap((student) =>
+      const studentExamLocationsTable = students.flatMap((student, index) =>
         locations.map((location) => ({
-          studentId: student.id,
+          numberOfStudent: index + 1,
+          cne: student.cne,
           examId: createdExam[0].insertId,
           locationId: location.id,
         }))

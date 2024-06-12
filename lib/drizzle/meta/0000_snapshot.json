@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "cf841c7a-f02c-4d62-be07-52088ab5519b",
+  "id": "e9cac420-e6fa-4619-8e86-5f7e71afaa3f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "department": {
@@ -162,6 +162,70 @@
       },
       "uniqueConstraints": {}
     },
+    "moduleOption": {
+      "name": "moduleOption",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "moduleId": {
+          "name": "moduleId",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "optionId": {
+          "name": "optionId",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "moduleOption_moduleId_module_id_fk": {
+          "name": "moduleOption_moduleId_module_id_fk",
+          "tableFrom": "moduleOption",
+          "tableTo": "module",
+          "columnsFrom": [
+            "moduleId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "moduleOption_optionId_option_id_fk": {
+          "name": "moduleOption_optionId_option_id_fk",
+          "tableFrom": "moduleOption",
+          "tableTo": "option",
+          "columnsFrom": [
+            "optionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "moduleOption_id": {
+          "name": "moduleOption_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "module": {
       "name": "module",
       "columns": {
@@ -178,37 +242,15 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "optionId": {
-          "name": "optionId",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "module_optionId_option_id_fk": {
-          "name": "module_optionId_option_id_fk",
-          "tableFrom": "module",
-          "tableTo": "option",
-          "columnsFrom": [
-            "optionId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {
-        "module_id_optionId_pk": {
-          "name": "module_id_optionId_pk",
+        "module_id": {
+          "name": "module_id",
           "columns": [
-            "id",
-            "optionId"
+            "id"
           ]
         }
       },
@@ -576,9 +618,9 @@
           "notNull": true,
           "autoincrement": true
         },
-        "cin": {
-          "name": "cin",
-          "type": "varchar(10)",
+        "cne": {
+          "name": "cne",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -644,6 +686,84 @@
       "compositePrimaryKeys": {
         "student_id": {
           "name": "student_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "studentExamLocation": {
+      "name": "studentExamLocation",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "cne": {
+          "name": "cne",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "numberOfStudent": {
+          "name": "numberOfStudent",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "locationId": {
+          "name": "locationId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "examId": {
+          "name": "examId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "studentExamLocation_locationId_location_id_fk": {
+          "name": "studentExamLocation_locationId_location_id_fk",
+          "tableFrom": "studentExamLocation",
+          "tableTo": "location",
+          "columnsFrom": [
+            "locationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "studentExamLocation_examId_exam_id_fk": {
+          "name": "studentExamLocation_examId_exam_id_fk",
+          "tableFrom": "studentExamLocation",
+          "tableTo": "exam",
+          "columnsFrom": [
+            "examId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "studentExamLocation_id": {
+          "name": "studentExamLocation_id",
           "columns": [
             "id"
           ]

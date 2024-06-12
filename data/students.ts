@@ -1,17 +1,18 @@
 "use server";
 import { db } from "@/lib/config";
 import {
+  moduleOption,
   moduleTable,
   ModuleType,
   Option,
   option,
-  Student,
   student,
+  StudentType,
 } from "@/lib/schema";
 import { GroupedData } from "@/lib/utils";
 import { and, eq } from "drizzle-orm";
 
-export const insertStudents = async (students: Omit<Student, "id">[]) => {
+export const insertStudents = async (students: Omit<StudentType, "id">[]) => {
   await db.insert(student).values(students);
 };
 
@@ -23,19 +24,36 @@ export const insertModule = async (newModule: ModuleType) => {
   await db.insert(moduleTable).values(newModule);
 };
 
-export const getModule = async (newModule: ModuleType) => {
+export const getStudents = async (
+  sessionExamId: number
+): Promise<StudentType[]> => {
+  const result = await db
+    .select()
+    .from(student)
+    .where(eq(student.sessionExamId, sessionExamId));
+  return result;
+};
+
+export const getModuleById = async (id: string) => {
   const result = await db.query.moduleTable.findFirst({
+    where: and(eq(moduleTable.id, id)),
+  });
+  return result || null;
+};
+
+export const getModuleInOption = async (moduleId: string, optionId: string) => {
+  const result = await db.query.moduleOption.findFirst({
     where: and(
-      eq(moduleTable.id, newModule.id),
-      eq(moduleTable.optionId, newModule.optionId)
+      eq(moduleOption.moduleId, moduleId),
+      eq(moduleOption.optionId, optionId)
     ),
   });
   return result || null;
 };
 
-export const getOption = async (newOption: Option) => {
+export const getOptionById = async (id: string) => {
   const result = await db.query.option.findFirst({
-    where: and(eq(option.id, newOption.id), eq(option.name, newOption.name)),
+    where: eq(option.id, id),
   });
   return result || null;
 };
@@ -44,31 +62,28 @@ export const insertOptionsAndModules = async (
 ) => {
   for (const optionId in optionsAndModules) {
     if (optionsAndModules.hasOwnProperty(optionId)) {
-      const existOption = await getOption({
-        id: optionId,
-        name: optionsAndModules[optionId].name,
-      });
-
+      const existOption = await getOptionById(optionId);
       if (!existOption) {
         await insertOption({
           id: optionId,
           name: optionsAndModules[optionId].name,
         });
       }
-
       for (const moduleId in optionsAndModules[optionId].modules) {
         if (optionsAndModules[optionId].modules.hasOwnProperty(moduleId)) {
-          const existModule = await getModule({
-            id: moduleId,
-            name: optionsAndModules[optionId].modules[moduleId].name,
-            optionId: optionId,
-          });
+          const existModule = await getModuleById(moduleId);
           if (!existModule) {
             await insertModule({
               id: moduleId,
               name: optionsAndModules[optionId].modules[moduleId].name,
-              optionId: optionId,
             });
+          }
+          const existModuleInOption = await getModuleInOption(
+            moduleId,
+            optionId
+          );
+          if (!existModuleInOption) {
+            await db.insert(moduleOption).values({ moduleId, optionId });
           }
         }
       }
@@ -77,7 +92,7 @@ export const insertOptionsAndModules = async (
 };
 
 export const insertStudentsChunk = async (
-  students: Omit<Student, "id">[],
+  students: Omit<StudentType, "id">[],
   sessionExamId: number
 ) => {
   await insertStudents(
@@ -88,7 +103,7 @@ export const insertStudentsChunk = async (
 export const getStudentsInModule = async (
   moduleId: string,
   sessionExamId: number
-): Promise<Student[]> => {
+): Promise<StudentType[]> => {
   const result = await db
     .select()
     .from(student)

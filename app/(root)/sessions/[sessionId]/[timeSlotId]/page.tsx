@@ -10,7 +10,6 @@ type Props = {
 const ExamsPage = async ({ params }: Props) => {
   const session = await gestSessionById(parseInt(params.sessionId));
   const exams = await getExamsWithDetailsAndCounts(parseInt(params.timeSlotId));
-  console.log("=>  ExamsPage  exams:", exams);
   const timeSlot = await getTimeSlotById(parseInt(params.timeSlotId));
 
   return (

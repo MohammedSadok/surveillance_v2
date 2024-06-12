@@ -100,7 +100,7 @@ export const transformData = (
   sessionExamId: number
 ): Omit<Student, "id">[][] => {
   const data = rawData.map((data) => ({
-    cin: data[3],
+    cne: data[4],
     firstName: data[1],
     lastName: data[2],
     sessionExamId: sessionExamId,

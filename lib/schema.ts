@@ -4,7 +4,6 @@ import {
   int,
   mysqlEnum,
   mysqlTable,
-  primaryKey,
   varchar,
 } from "drizzle-orm/mysql-core";
 // Enums
@@ -45,21 +44,26 @@ export const option = mysqlTable("option", {
   name: varchar("name", { length: 50 }).notNull(),
 });
 
-export const moduleTable = mysqlTable(
-  "module",
-  {
-    id: varchar("id", { length: 20 }).notNull(),
-    name: varchar("name", { length: 50 }).notNull(),
-    optionId: varchar("optionId", { length: 20 })
-      .references(() => option.id, { onDelete: "cascade", onUpdate: "cascade" })
-      .notNull(),
-  },
-  (table) => {
-    return {
-      pk: primaryKey({ columns: [table.id, table.optionId] }),
-    };
-  }
-);
+export const moduleTable = mysqlTable("module", {
+  id: varchar("id", { length: 20 }).primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+});
+
+export const moduleOption = mysqlTable("moduleOption", {
+  id: int("id").autoincrement().primaryKey(),
+  moduleId: varchar("moduleId", { length: 20 })
+    .references(() => moduleTable.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
+    .notNull(),
+  optionId: varchar("optionId", { length: 20 })
+    .references(() => option.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
+    .notNull(),
+});
 
 export const exam = mysqlTable("exam", {
   id: int("id").autoincrement().primaryKey(),
@@ -85,7 +89,7 @@ export const exam = mysqlTable("exam", {
 
 export const student = mysqlTable("student", {
   id: int("id").autoincrement().primaryKey(),
-  cin: varchar("cin", { length: 10 }).notNull(),
+  cne: varchar("cne", { length: 20 }).notNull(),
   firstName: varchar("firstName", { length: 50 }).notNull(),
   lastName: varchar("lastName", { length: 50 }).notNull(),
   sessionExamId: int("sessionExamId")
@@ -103,14 +107,10 @@ export const student = mysqlTable("student", {
 });
 export const studentExamLocation = mysqlTable("studentExamLocation", {
   id: int("id").autoincrement().primaryKey(),
+  cne: varchar("cne", { length: 20 }).notNull(),
+  numberOfStudent: int("numberOfStudent").notNull(),
   locationId: int("locationId")
     .references(() => location.id, {
-      onDelete: "cascade",
-      onUpdate: "cascade",
-    })
-    .notNull(),
-  studentId: int("studentId")
-    .references(() => student.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     })
@@ -210,5 +210,6 @@ export type Department = typeof department.$inferSelect;
 export type Teacher = typeof teacher.$inferSelect;
 export type Location = typeof location.$inferSelect;
 export type Option = typeof option.$inferSelect;
-export type Student = typeof student.$inferSelect;
-export type studentExamLocation = typeof studentExamLocation.$inferSelect;
+export type StudentType = typeof student.$inferSelect;
+export type StudentExamLocation = typeof studentExamLocation.$inferSelect;
+export type ModuleOptionType = typeof moduleOption.$inferSelect;
