@@ -44,8 +44,8 @@ import {
 
 const SessionModal = () => {
   const { isOpen, onClose, type } = useModal();
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [students, setStudents] = useState<any[]>([]);
   const isModalOpen = isOpen && type === "createSession";
 
   const form = useForm<z.infer<typeof SessionSchema>>({
@@ -58,59 +58,63 @@ const SessionModal = () => {
     },
   });
 
-  const isLoading = form.formState.isSubmitting;
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files && event.target.files[0];
-    if (file) {
-      form.setValue("urlFile", file);
+  const onSubmit = async (values: z.infer<typeof SessionSchema>) => {
+    setIsLoading(true);
 
-      const fileReader = new FileReader();
-      fileReader.onload = function () {
-        const arrayBuffer = this.result;
-        const workbook = read(arrayBuffer, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data: any[] = utils.sheet_to_json(sheet, { header: 1 });
-        const fileColumns = data[0];
+    try {
+      const start = format(values.dateRange.from, "yyyy-MM-dd");
+      const end = format(values.dateRange.to, "yyyy-MM-dd");
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const data = {
+        startDate,
+        endDate,
+        type: values.type,
+        morningSession1: values.morningSession1,
+        morningSession2: values.morningSession2,
+        afternoonSession1: values.afternoonSession1,
+        afternoonSession2: values.afternoonSession2,
+      };
 
-        if (
-          fileColumns.length !== expectedColumns.length ||
-          !fileColumns.every((col, index) => col === expectedColumns[index])
-        ) {
-          toast.error("Le fichier ne correspond pas au format attendu.");
-          return;
-        } else {
-          // Remove the first line (header)
-          const dataWithoutHeaders = data.slice(1);
-          setStudents(dataWithoutHeaders);
+      const file = values.urlFile as File;
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const target = event?.target;
+        if (target instanceof FileReader) {
+          const binaryString = target.result as string;
+          const workbook = read(binaryString, { type: "binary" });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const fileData: any[] = utils.sheet_to_json(sheet, { header: 1 });
+          const fileColumns = fileData[0];
+          if (
+            fileColumns.length !== expectedColumns.length ||
+            !fileColumns.every((col, index) => col === expectedColumns[index])
+          ) {
+            toast.error("Le fichier ne correspond pas au format attendu.");
+            setIsLoading(false);
+            return;
+          } else {
+            const students = fileData.slice(1);
+            const id = await createSession(data);
+            const optionsAndModules = groupData(students);
+            const studentChunks = transformData(students, id);
+            await insertOptionsAndModules(optionsAndModules);
+            await Promise.all(
+              studentChunks.map((chunk) => insertStudentsChunk(chunk, id))
+            );
+            router.push(`/sessions/${id}`);
+            onClose();
+            setIsLoading(false);
+          }
         }
       };
-      fileReader.readAsArrayBuffer(file);
-    }
-  };
 
-  const onSubmit = async (values: z.infer<typeof SessionSchema>) => {
-    const start = format(values.dateRange.from, "yyyy-MM-dd");
-    const end = format(values.dateRange.to, "yyyy-MM-dd");
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const data = {
-      startDate,
-      endDate,
-      type: values.type,
-      morningSession1: values.morningSession1,
-      morningSession2: values.morningSession2,
-      afternoonSession1: values.afternoonSession1,
-      afternoonSession2: values.afternoonSession2,
-    };
-    const id = await createSession(data);
-    const optionsAndModules = groupData(students);
-    const studentChunks = transformData(students, id);
-    await insertOptionsAndModules(optionsAndModules);
-    await Promise.all(
-      studentChunks.map((chunk) => insertStudentsChunk(chunk, id))
-    );
-    router.push(`/sessions/${id}`);
-    onClose();
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error(error);
+      toast.error("An error occurred while processing the form.");
+      setIsLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -282,7 +286,12 @@ const SessionModal = () => {
                       type="file"
                       disabled={isLoading}
                       placeholder="Entrez le nombre d'étudiants inscrits"
-                      onChange={handleFileChange}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        form.setValue(
+                          "urlFile",
+                          e.target.files ? e.target.files[0] : null
+                        );
+                      }}
                     />
                     <FormMessage />
                   </FormItem>

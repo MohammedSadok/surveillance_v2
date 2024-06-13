@@ -7,14 +7,29 @@ import {
   ModuleType,
   student,
   StudentType,
+  timeSlot,
 } from "@/lib/schema";
 import { and, eq, notInArray, sql } from "drizzle-orm";
+import { getTimeSlotById } from "./timeSlot";
+/**
+ *
+ * @returns Promise<ModuleType[]>
+ * Return all modules in the database
+ */
 export const getModules = async (): Promise<Omit<ModuleType, "optionId">[]> => {
   const result = await db
     .selectDistinct({ id: moduleTable.id, name: moduleTable.name })
     .from(moduleTable);
   return result;
 };
+
+/**
+ *
+ * @param moduleId
+ * @param sessionId
+ * @returns Promise<number>
+ * Return the number of students in a module
+ */
 export const getNumberOfStudentsInModule = async (
   moduleId: string,
   sessionId: number
@@ -28,6 +43,13 @@ export const getNumberOfStudentsInModule = async (
   return result.length;
 };
 
+/**
+ *
+ * @param moduleId
+ * @param sessionExamId
+ * @returns Promise<StudentType[]>
+ * Return all students in a module
+ */
 export const getStudentsInModule = async (
   moduleId: string,
   sessionExamId: number
@@ -43,6 +65,13 @@ export const getStudentsInModule = async (
     );
   return result;
 };
+
+/**
+ *
+ * @param timeSlotId
+ * @returns Promise<string[]>
+ * Return all option ids that have an exam in a specific time slot
+ */
 export const getOptionIdsWithExamsInTimeSlot = async (
   timeSlotId: number
 ): Promise<string[]> => {
@@ -70,12 +99,46 @@ export const getOptionIdsWithExamsInTimeSlot = async (
     throw error;
   }
 };
+
+/**
+ *
+ * @param sessionExamId
+ * @returns Promise<ModuleType[]>
+ * Return all modules that have an exam in a specific time slot
+ */
+export const getModulesAlreadyHaveExam = async (
+  sessionExamId: number
+): Promise<ModuleType[]> => {
+  const result = await db
+    .select({
+      id: moduleTable.id,
+      name: moduleTable.name,
+    })
+    .from(moduleTable)
+    .innerJoin(exam, eq(exam.moduleId, moduleTable.id))
+    .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
+    .where(eq(timeSlot.sessionExamId, sessionExamId));
+  return result;
+};
+
+/**
+ *
+ * @param timeSlotId
+ * @returns Promise<ModuleType[]>
+ * Return all modules that don't have an exam in a specific time slot
+ */
 export const getModulesForExam = async (
   timeSlotId: number
 ): Promise<ModuleType[]> => {
   try {
     const options = await getOptionIdsWithExamsInTimeSlot(timeSlotId);
     if (options.length > 0) {
+      const selectedTimeSlotId = await getTimeSlotById(timeSlotId);
+      let moduleIds: string[] = [];
+      if (selectedTimeSlotId)
+        moduleIds = await getModulesAlreadyHaveExam(
+          selectedTimeSlotId.sessionExamId
+        ).then((modules) => modules.map((module) => module.id));
       const result = await db
         .selectDistinct({
           id: moduleTable.id,
@@ -84,7 +147,7 @@ export const getModulesForExam = async (
         .from(moduleTable)
         .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
         .where(notInArray(moduleOption.optionId, options));
-      return result;
+      return result.filter((module) => !moduleIds.includes(module.id));
     } else {
       const result = await db.select().from(moduleTable);
       return result;
@@ -98,6 +161,11 @@ export const getModulesForExam = async (
   }
 };
 
+/**
+ * @param sessionExamId
+ * @returns Promise<moduleWithStudentCount[]>
+ * Return the number of students in each module
+ */
 export const getModulesWithStudentCount = async (
   sessionExamId: number
 ): Promise<moduleWithStudentCount[]> => {
