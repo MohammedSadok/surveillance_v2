@@ -2,7 +2,14 @@
 import { and, eq } from "drizzle-orm";
 
 import { db } from "@/lib/config";
-import { SessionExam, sessionExam, timeSlot, users } from "@/lib/schema";
+import {
+  exam,
+  moduleTable,
+  SessionExam,
+  sessionExam,
+  timeSlot,
+  users,
+} from "@/lib/schema";
 import { DayWithTimeSlots } from "@/lib/utils";
 
 export const LoginUser = async (email: string, password: string) => {
@@ -96,28 +103,51 @@ export const createSession = async (session: CreateSessionType) => {
   }
 };
 
-export const getDays = async (
+export const getDaysWithExams = async (
   sessionId: number
 ): Promise<DayWithTimeSlots[]> => {
   try {
     const result = await db
       .select()
       .from(timeSlot)
+      .leftJoin(exam, eq(exam.timeSlotId, timeSlot.id))
+      .leftJoin(moduleTable, eq(moduleTable.id, exam.moduleId))
       .where(eq(timeSlot.sessionExamId, sessionId))
       .orderBy(timeSlot.date);
 
-    const days = result.reduce((acc, slot) => {
-      const dateKey = slot.date.toISOString().split("T")[0];
+    const days = result.reduce((acc, row) => {
+      const dateKey = row.timeSlot.date.toISOString().split("T")[0];
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, timeSlots: [] };
       }
-      acc[dateKey].timeSlots.push({
-        id: slot.id,
-        period: slot.period,
-        timePeriod: slot.timePeriod,
-      });
+
+      const timeSlotIndex = acc[dateKey].timeSlots.findIndex(
+        (slot) => slot.id === row.timeSlot.id
+      );
+
+      if (timeSlotIndex === -1) {
+        acc[dateKey].timeSlots.push({
+          id: row.timeSlot.id,
+          period: row.timeSlot.period,
+          timePeriod: row.timeSlot.timePeriod,
+          exams: [],
+        });
+      }
+
+      const currentTimeSlot = acc[dateKey].timeSlots.find(
+        (slot) => slot.id === row.timeSlot.id
+      );
+
+      if (row.exam && currentTimeSlot && row.module) {
+        currentTimeSlot.exams.push({
+          id: row.exam.id,
+          moduleName: row.module.name,
+        });
+      }
+
       return acc;
     }, {} as Record<string, DayWithTimeSlots>);
+
     const daysArray: DayWithTimeSlots[] = Object.values(days);
     return daysArray;
   } catch (error) {

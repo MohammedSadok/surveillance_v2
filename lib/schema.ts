@@ -104,6 +104,12 @@ export const student = mysqlTable("student", {
       onUpdate: "cascade",
     })
     .notNull(),
+  optionId: varchar("optionId", { length: 20 })
+    .references(() => option.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
+    .notNull(),
 });
 export const studentExamLocation = mysqlTable("studentExamLocation", {
   id: int("id").autoincrement().primaryKey(),

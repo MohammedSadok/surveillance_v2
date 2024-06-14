@@ -1,5 +1,3 @@
-const page = async () => {
-  return <div>page</div>;
-};
-
-export default page;
+export default function SessionPage() {
+  return <div></div>;
+}

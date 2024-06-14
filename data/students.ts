@@ -34,6 +34,24 @@ export const getStudents = async (
   return result;
 };
 
+export const getStudentsInOptionAndModule = async (
+  optionId: string,
+  moduleId: string,
+  sessionExamId: number
+) => {
+  const result = await db
+    .select()
+    .from(student)
+    .where(
+      and(
+        eq(student.optionId, optionId),
+        eq(student.moduleId, moduleId),
+        eq(student.sessionExamId, sessionExamId)
+      )
+    );
+  return result;
+};
+
 export const getModuleById = async (id: string) => {
   const result = await db.query.moduleTable.findFirst({
     where: and(eq(moduleTable.id, id)),

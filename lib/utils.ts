@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Student } from "./schema";
+import { StudentType } from "./schema";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -23,10 +23,23 @@ type TimeSlot = {
   timePeriod: string;
 };
 
+export type Exam = {
+  id: number;
+  moduleName: string;
+};
+
+export type TimeSlotWithExams = {
+  id: number;
+  period: string;
+  timePeriod: string;
+  exams: Exam[];
+};
+
 export type DayWithTimeSlots = {
   date: string;
-  timeSlots: TimeSlot[];
+  timeSlots: TimeSlotWithExams[];
 };
+
 export const expectedColumns = [
   "CODE_ETUDIANT",
   "NOM",
@@ -98,15 +111,16 @@ export const groupData = (data: RawData[]): GroupedData => {
 export const transformData = (
   rawData: RawData[],
   sessionExamId: number
-): Omit<Student, "id">[][] => {
+): Omit<StudentType, "id">[][] => {
   const data = rawData.map((data) => ({
     cne: data[4],
     firstName: data[1],
     lastName: data[2],
     sessionExamId: sessionExamId,
     moduleId: data[6],
+    optionId: data[9],
   }));
-  const size = 10000;
+  const size = 20000;
   const result = [];
   for (let i = 0; i < data.length; i += size) {
     result.push(data.slice(i, i + size));
