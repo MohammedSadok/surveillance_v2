@@ -1,7 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
 
-import { BookCheck, CalendarCheck, NotebookText } from "lucide-react";
+import { BookCheck, CalendarCheck, NotebookText, Table } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -49,6 +49,19 @@ export function Sidebar({ sessionId }: SidebarProps) {
         >
           <NotebookText className="mr-2 h-4 w-4" />
           <span className="hidden md:block">Options</span>
+        </span>
+      </Link>
+      <Link href={`/sessions/${sessionId}/schedule`}>
+        <span
+          className={cn(
+            "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+            path === `/sessions/${sessionId}/schedule`
+              ? "bg-accent"
+              : "transparent"
+          )}
+        >
+          <Table className="mr-2 h-4 w-4" />
+          <span className="hidden md:block">Emploi</span>
         </span>
       </Link>
     </div>

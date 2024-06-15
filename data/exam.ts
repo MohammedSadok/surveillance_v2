@@ -8,6 +8,7 @@ import {
   student,
   studentExamLocation,
   teacher,
+  timeSlot,
 } from "@/lib/schema";
 import { and, eq, sql } from "drizzle-orm";
 import {
@@ -41,14 +42,31 @@ export const createExam = async (newExam: ExamType) => {
         selectedTimeSlot.sessionExamId
       );
 
-      const studentExamLocationsTable = students.flatMap((student, index) =>
-        locations.map((location) => ({
-          numberOfStudent: index + 1,
-          cne: student.cne,
-          examId: createdExam[0].insertId,
-          locationId: location.id,
-        }))
-      );
+      // Distribute students across locations
+      let studentIndex = 0;
+      let studentExamLocationsTable: Array<{
+        numberOfStudent: number;
+        cne: string;
+        examId: number;
+        locationId: number;
+      }> = [];
+
+      for (const location of locations) {
+        for (
+          let i = 0;
+          i < location.size && studentIndex < students.length;
+          i++
+        ) {
+          studentExamLocationsTable.push({
+            numberOfStudent: i + 1,
+            cne: students[studentIndex].cne,
+            examId: createdExam[0].insertId,
+            locationId: location.id,
+          });
+          studentIndex++;
+        }
+      }
+
       await db.insert(studentExamLocation).values(studentExamLocationsTable);
       await reserveLocationsForModule(locations, createdExam[0].insertId);
     }
@@ -58,9 +76,18 @@ export const createExam = async (newExam: ExamType) => {
   }
 };
 
-export const getExams = async (): Promise<Exam[]> => {
+export const getExams = async (sessionExamId: number): Promise<Exam[]> => {
   try {
-    return await db.select().from(exam);
+    return await db
+      .select({
+        id: exam.id,
+        moduleId: exam.moduleId,
+        timeSlotId: exam.timeSlotId,
+        responsibleId: exam.responsibleId,
+      })
+      .from(exam)
+      .innerJoin(timeSlot, eq(exam.timeSlotId, timeSlot.id))
+      .where(eq(timeSlot.sessionExamId, sessionExamId));
   } catch (error) {
     console.error("Error fetching exams:", error);
     throw error;

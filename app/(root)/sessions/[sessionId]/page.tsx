@@ -7,11 +7,7 @@ interface ExamsPageProps {
 const ExamsPage = async ({ params }: ExamsPageProps) => {
   const days = await getDaysWithExams(parseInt(params.sessionId));
   // const session = await gestSessionById(id);
-  // const modules = await getModulesInOption("SMS2I1");
-  // const studentsExamsSchedule = await generateStudentsExamOptionSchedule(
-  //   id,
-  //   "SMS2I1"
-  // );
+  //
 
   return (
     <Schedule sessionDays={days} sessionId={params.sessionId} />

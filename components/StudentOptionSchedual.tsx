@@ -17,10 +17,7 @@ import {
 import { StudentWithExams } from "@/data/option";
 import { ModuleType } from "@/lib/schema";
 
-import { DayWithTimeSlots } from "@/lib/utils";
-
-import React, { useRef, useState } from "react";
-import { useReactToPrint } from "react-to-print";
+import React, { useState } from "react";
 
 interface StudentOptionScheduleProps {
   modules: ModuleType[];
@@ -32,7 +29,7 @@ const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
   students,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const itemsPerPage = 38;
 
   // Calculate the index of the first and last teacher to be displayed on the current page
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -80,7 +77,7 @@ const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
                     className="border text-center text-xs p-0.2"
                   >
                     {exam
-                      ? exam.locationName + " L : " + exam.numberOfStudent
+                      ? exam.locationName + " N : " + exam.numberOfStudent
                       : null}
                   </TableCell>
                 );

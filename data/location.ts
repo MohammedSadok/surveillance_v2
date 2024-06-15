@@ -89,39 +89,51 @@ export const deleteOccupiedLocation = async (id: number) => {
 
 export const getFreeLocations = async (timeSlotId: number) => {
   try {
+    // Fetch occupied locations for the given time slot
     const occupiedLocations = await db
       .select()
       .from(occupiedLocation)
       .where(eq(occupiedLocation.timeSlotId, timeSlotId));
 
+    // Extract occupied location IDs
     const occupiedLocationIds = occupiedLocations.map(
       (location) => location.id
     );
 
+    // Fetch locations being used in exams for the given time slot
     const examLocations = await db
       .select()
       .from(monitoring)
       .innerJoin(exam, eq(monitoring.examId, exam.id))
       .where(eq(exam.timeSlotId, timeSlotId));
 
+    // Extract exam location IDs
     const examLocationIds = examLocations.map(
       (location) => location.monitoring.locationId
     );
 
-    const allOccupiedLocationIds = [...occupiedLocationIds, ...examLocationIds];
+    // Combine all occupied location IDs and create a set to ensure uniqueness
+    const allOccupiedLocationIds = Array.from(
+      new Set([...occupiedLocationIds, ...examLocationIds])
+    );
+
     let freeLocations: Location[] = [];
+
     if (allOccupiedLocationIds.length > 0) {
+      // Fetch free locations excluding the occupied ones
       freeLocations = await db
         .select()
         .from(location)
         .where(notInArray(location.id, allOccupiedLocationIds))
         .orderBy(desc(location.size));
     } else {
+      // Fetch all locations if there are no occupied locations
       freeLocations = await db
         .select()
         .from(location)
         .orderBy(desc(location.size));
     }
+
     return freeLocations;
   } catch (error) {
     console.error("Error fetching free locations:", error);
@@ -137,7 +149,6 @@ export const getFreeLocationsForModule = async (
     const timeSlot = await getTimeSlotById(timeSlotId);
     const freeLocations = await getFreeLocations(timeSlotId);
     let studentsRemaining = 0;
-
     if (timeSlot !== null) {
       studentsRemaining = await getNumberOfStudentsInModule(
         moduleId,
@@ -151,16 +162,18 @@ export const getFreeLocationsForModule = async (
       const currentLocation = freeLocations[i];
       const nextLocation = freeLocations[i + 1];
       if (studentsRemaining <= 0) break;
-      else if (studentsRemaining >= currentLocation.size) {
+
+      if (studentsRemaining >= currentLocation.size) {
         locations.push(currentLocation);
         studentsRemaining -= currentLocation.size;
-      } else if (nextLocation && studentsRemaining <= nextLocation.size)
+      } else if (nextLocation && studentsRemaining <= nextLocation.size) {
         continue;
-      if (studentsRemaining > 0) {
+      } else {
         locations.push(currentLocation);
         studentsRemaining -= currentLocation.size;
       }
     }
+
     if (studentsRemaining > 0) {
       throw new Error(`Il reste ${studentsRemaining} étudiants sans local.`);
     }

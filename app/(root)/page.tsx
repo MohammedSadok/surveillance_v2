@@ -1,3 +1,3 @@
-export default function SessionPage() {
+export default async function SessionPage() {
   return <div></div>;
 }

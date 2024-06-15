@@ -11,6 +11,7 @@ import {
   student,
   studentExamLocation,
   StudentType,
+  timeSlot,
 } from "@/lib/schema";
 import { and, eq } from "drizzle-orm";
 
@@ -112,40 +113,67 @@ export const getModulesInOption = async (
 };
 
 export const generateStudentsExamOptionSchedule = async (
-  sessionExamId: number,
-  optionId: string
+  sessionExamId: number
 ): Promise<StudentWithExams[]> => {
   try {
-    // Fetch students based on sessionExamId
-    const students = await getStudentsInOption(optionId, sessionExamId);
+    const students = await db
+      .select()
+      .from(student)
+      .where(eq(student.sessionExamId, sessionExamId))
+
+      .as("students");
+
     const exams = await db
       .select({
-        studentId: student.cne,
-        moduleId: moduleTable.id,
-        locationName: location.name,
-        timeSlot: exam.timeSlotId,
+        id: exam.id,
+        moduleId: exam.moduleId,
+        timeSlotId: exam.timeSlotId,
+        responsibleId: exam.responsibleId,
+      })
+      .from(exam)
+      .innerJoin(timeSlot, eq(exam.timeSlotId, timeSlot.id))
+      .where(eq(timeSlot.sessionExamId, sessionExamId))
+      .as("exams");
+
+    // console.log(exa)
+
+    const schedule = await db
+      .select({
+        cne: students.cne,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        examModuleId: exams.moduleId,
+        examLocation: location.name,
         numberOfStudent: studentExamLocation.numberOfStudent,
       })
       .from(studentExamLocation)
-      .innerJoin(student, eq(studentExamLocation.cne, student.cne))
-      .innerJoin(exam, eq(studentExamLocation.examId, exam.id))
+      .innerJoin(students, eq(studentExamLocation.cne, students.cne))
+      .innerJoin(exams, eq(studentExamLocation.examId, exams.id))
       .innerJoin(location, eq(studentExamLocation.locationId, location.id))
-      .innerJoin(moduleTable, eq(exam.moduleId, moduleTable.id))
-      .where(eq(student.sessionExamId, sessionExamId));
+      .where(eq(students.moduleId, exams.moduleId));
+    const groupedStudents = schedule.reduce((acc, curr) => {
+      const existingStudent = acc.find((stu) => stu.cne === curr.cne);
+      const examDetails = {
+        numberOfStudent: curr.numberOfStudent,
+        moduleId: curr.examModuleId,
+        locationName: curr.examLocation,
+      };
 
-    const studentExamSchedule: StudentWithExams[] = students.map((stu) => ({
-      ...stu,
-      exams: exams
-        .filter((ex) => ex.studentId === stu.cne)
-        .map((ex) => ({
-          numberOfStudent: ex.numberOfStudent,
-          moduleId: ex.moduleId,
-          locationName: ex.locationName,
-          timeSlot: ex.timeSlot,
-        })),
-    }));
+      if (existingStudent) {
+        existingStudent.exams.push(examDetails);
+      } else {
+        acc.push({
+          cne: curr.cne,
+          firstName: curr.firstName,
+          lastName: curr.lastName,
+          exams: [examDetails],
+        });
+      }
 
-    return studentExamSchedule;
+      return acc;
+    }, [] as StudentWithExams[]);
+
+    return groupedStudents;
   } catch (error) {
     console.error("Error generating students exam schedule:", error);
     throw error;
@@ -163,6 +191,5 @@ export type StudentWithExams = Student & {
     numberOfStudent: number;
     moduleId: string;
     locationName: string;
-    timeSlot: number; // or string, depending on your timeSlot type
   }[];
 };
