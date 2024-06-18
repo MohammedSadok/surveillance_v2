@@ -116,7 +116,7 @@ export const studentExamLocation = mysqlTable("studentExamLocation", {
   cne: varchar("cne", { length: 20 }).notNull(),
   numberOfStudent: int("numberOfStudent").notNull(),
   locationId: int("locationId")
-    .references(() => location.id, {
+    .references(() => locationTable.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     })
@@ -165,7 +165,7 @@ export const monitoring = mysqlTable("monitoring", {
     .references(() => exam.id, { onDelete: "cascade", onUpdate: "cascade" })
     .notNull(),
   locationId: int("locationId")
-    .references(() => location.id, {
+    .references(() => locationTable.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     })
@@ -185,7 +185,7 @@ export const monitoringLine = mysqlTable("monitoringLine", {
     .notNull(),
 });
 
-export const location = mysqlTable("location", {
+export const locationTable = mysqlTable("location", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   size: int("size").notNull(),
@@ -196,7 +196,10 @@ export const occupiedLocation = mysqlTable("occupiedLocation", {
   id: int("id").autoincrement().primaryKey(),
   cause: varchar("cause", { length: 50 }).notNull(),
   locationId: int("locationId")
-    .references(() => location.id, { onDelete: "cascade", onUpdate: "cascade" })
+    .references(() => locationTable.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
     .notNull(),
   timeSlotId: int("timeSlotId")
     .references(() => timeSlot.id, { onDelete: "cascade", onUpdate: "cascade" })
@@ -214,7 +217,7 @@ export type MonitoringLine = typeof monitoringLine.$inferSelect;
 export type OccupiedLocation = typeof occupiedLocation.$inferSelect;
 export type Department = typeof department.$inferSelect;
 export type Teacher = typeof teacher.$inferSelect;
-export type Location = typeof location.$inferSelect;
+export type LocationType = typeof locationTable.$inferSelect;
 export type Option = typeof option.$inferSelect;
 export type StudentType = typeof student.$inferSelect;
 export type StudentExamLocation = typeof studentExamLocation.$inferSelect;

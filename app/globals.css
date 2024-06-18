@@ -77,3 +77,35 @@
 input[type="time"]::-webkit-datetime-edit-ampm-field {
   display: none;
 }
+
+@media all {
+  .page-break {
+    display: none;
+  }
+}
+
+@media print {
+  html,
+  body {
+    height: initial !important;
+    overflow: initial !important;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+@media print {
+  .page-break {
+    margin-top: 0.5rem;
+    display: block;
+    /* page-break-before: always; */
+  }
+}
+@media print {
+  .pagebreak {
+    page-break-before: always;
+  } /* page-break-after works, as well */
+}
+@page {
+  size: auto;
+  margin: 5mm;
+}

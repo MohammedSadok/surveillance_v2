@@ -1,16 +1,22 @@
 "use server";
 import { db } from "@/lib/config";
-import type { Location, OccupiedLocation } from "@/lib/schema";
-import { exam, location, monitoring, occupiedLocation } from "@/lib/schema";
+import {
+  exam,
+  locationTable,
+  LocationType,
+  monitoring,
+  occupiedLocation,
+  OccupiedLocation,
+} from "@/lib/schema";
 import { desc, eq, notInArray } from "drizzle-orm";
 import { getNumberOfStudentsInModule } from "./modules";
 import { getTimeSlotById } from "./timeSlot";
 
 export const createLocation = async (
-  newLocation: Omit<Location, "id">
+  newLocation: Omit<LocationType, "id">
 ): Promise<void> => {
   try {
-    await db.insert(location).values(newLocation);
+    await db.insert(locationTable).values(newLocation);
   } catch (error) {
     console.error("Error creating location:", error);
     throw error;
@@ -18,7 +24,7 @@ export const createLocation = async (
 };
 export const getLocations = async () => {
   try {
-    const result = await db.select().from(location);
+    const result = await db.select().from(locationTable);
     return result;
   } catch (error) {
     console.error("Error fetching locations:", error);
@@ -28,8 +34,8 @@ export const getLocations = async () => {
 
 export const getLocationById = async (id: number) => {
   try {
-    const result = await db.query.location.findFirst({
-      where: eq(location.id, id),
+    const result = await db.query.locationTable.findFirst({
+      where: eq(locationTable.id, id),
     });
     return result;
   } catch (error) {
@@ -37,12 +43,12 @@ export const getLocationById = async (id: number) => {
     throw error;
   }
 };
-export const updateLocation = async (newLocation: Location) => {
+export const updateLocation = async (newLocation: LocationType) => {
   try {
     await db
-      .update(location)
+      .update(locationTable)
       .set(newLocation)
-      .where(eq(location.id, newLocation.id));
+      .where(eq(locationTable.id, newLocation.id));
   } catch (error) {
     console.error("Error updating location:", error);
     throw error;
@@ -50,7 +56,7 @@ export const updateLocation = async (newLocation: Location) => {
 };
 export const deleteLocation = async (id: number) => {
   try {
-    await db.delete(location).where(eq(location.id, id));
+    await db.delete(locationTable).where(eq(locationTable.id, id));
   } catch (error) {
     console.error("Error deleting location:", error);
     throw error;
@@ -117,21 +123,21 @@ export const getFreeLocations = async (timeSlotId: number) => {
       new Set([...occupiedLocationIds, ...examLocationIds])
     );
 
-    let freeLocations: Location[] = [];
+    let freeLocations: LocationType[] = [];
 
     if (allOccupiedLocationIds.length > 0) {
       // Fetch free locations excluding the occupied ones
       freeLocations = await db
         .select()
-        .from(location)
-        .where(notInArray(location.id, allOccupiedLocationIds))
-        .orderBy(desc(location.size));
+        .from(locationTable)
+        .where(notInArray(locationTable.id, allOccupiedLocationIds))
+        .orderBy(desc(locationTable.size));
     } else {
       // Fetch all locations if there are no occupied locations
       freeLocations = await db
         .select()
-        .from(location)
-        .orderBy(desc(location.size));
+        .from(locationTable)
+        .orderBy(desc(locationTable.size));
     }
 
     return freeLocations;
@@ -156,7 +162,7 @@ export const getFreeLocationsForModule = async (
       );
     }
 
-    let locations: Location[] = [];
+    let locations: LocationType[] = [];
 
     for (let i = 0; i < freeLocations.length; i++) {
       const currentLocation = freeLocations[i];
@@ -189,7 +195,7 @@ export const getFreeLocationsForModule = async (
 };
 
 export const reserveLocationsForModule = async (
-  locations: Location[],
+  locations: LocationType[],
   examId: number
 ) => {
   try {

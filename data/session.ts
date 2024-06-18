@@ -4,13 +4,14 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/config";
 import {
   exam,
+  moduleOption,
   moduleTable,
   SessionExam,
   sessionExam,
   timeSlot,
   users,
 } from "@/lib/schema";
-import { DayWithTimeSlots } from "@/lib/utils";
+import { DayWithTimeSlots, DayWithTimeSlotsOption } from "@/lib/utils";
 
 export const LoginUser = async (email: string, password: string) => {
   const result = await db.query.users.findFirst({
@@ -142,6 +143,70 @@ export const getDaysWithExams = async (
         currentTimeSlot.exams.push({
           id: row.exam.id,
           moduleName: row.module.name,
+        });
+      }
+
+      return acc;
+    }, {} as Record<string, DayWithTimeSlots>);
+
+    const daysArray: DayWithTimeSlots[] = Object.values(days);
+    return daysArray;
+  } catch (error) {
+    console.error("Error fetching days and time slots:", error);
+    throw error;
+  }
+};
+
+export const getDaysWithExamsForOption = async (
+  sessionId: number,
+  optionsId: string
+): Promise<DayWithTimeSlotsOption[]> => {
+  try {
+    const modulesInOption = db
+      .select({
+        id: moduleTable.id,
+        name: moduleTable.name,
+      })
+      .from(moduleTable)
+      .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
+      .where(eq(moduleOption.optionId, optionsId))
+      .as("modulesInOption");
+
+    const result = await db
+      .select()
+      .from(timeSlot)
+      .leftJoin(exam, eq(exam.timeSlotId, timeSlot.id))
+      .leftJoin(modulesInOption, eq(modulesInOption.id, exam.moduleId))
+      .where(eq(timeSlot.sessionExamId, sessionId))
+      .orderBy(timeSlot.date);
+
+    const days = result.reduce((acc, row) => {
+      const dateKey = row.timeSlot.date.toISOString().split("T")[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = { date: dateKey, timeSlots: [] };
+      }
+
+      const timeSlotIndex = acc[dateKey].timeSlots.findIndex(
+        (slot) => slot.id === row.timeSlot.id
+      );
+
+      if (timeSlotIndex === -1) {
+        acc[dateKey].timeSlots.push({
+          id: row.timeSlot.id,
+          period: row.timeSlot.period,
+          timePeriod: row.timeSlot.timePeriod,
+          exams: [],
+        });
+      }
+
+      const currentTimeSlot = acc[dateKey].timeSlots.find(
+        (slot) => slot.id === row.timeSlot.id
+      );
+
+      if (row.exam && currentTimeSlot && row.modulesInOption) {
+        currentTimeSlot.exams.push({
+          id: row.exam.id,
+          moduleName: row.modulesInOption.name,
         });
       }
 

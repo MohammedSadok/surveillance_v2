@@ -30,6 +30,7 @@ import { ArrowLeftCircle, ArrowRightCircle, FileDown } from "lucide-react";
 import Image from "next/image";
 import React, { useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
+import PrintTeacherMonitoring from "./print/PrintTeacherMonitoring";
 
 interface TeacherMonitoringProps {
   sessionDays: DayWithTimeSlotsAndMonitoring[];
@@ -50,11 +51,6 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
   const componentRef = useRef<any>();
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-  });
-
-  const dayRef = useRef<any>();
-  const handlePrintDay = useReactToPrint({
-    content: () => dayRef.current,
   });
 
   const currentRangeEnd = Math.min(
@@ -250,11 +246,24 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
           <div className="flex justify-between items-center">
             <Image
               src={logo}
-              alt="Logo"
-              style={{ objectFit: "contain" }}
+              alt={""}
+              style={{
+                objectFit: "contain",
+              }}
               className="w-[200px]"
             />
+            <p className="capitalize text-xl">
+              {selectedDepartment != null
+                ? "Département: " +
+                  departments.find((dep) => dep.id == selectedDepartment)?.name
+                : null}
+            </p>
           </div>
+
+          <PrintTeacherMonitoring
+            sessionDays={sessionDays}
+            selectedDepartment={selectedDepartment}
+          />
         </div>
       </div>
     </div>

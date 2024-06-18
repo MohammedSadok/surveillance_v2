@@ -1,13 +1,18 @@
 "use server";
 import { db } from "@/lib/config";
 import {
+  locationTable,
+  LocationType,
   moduleOption,
   moduleTable,
   ModuleType,
+  monitoring,
   Option,
   option,
   student,
+  studentExamLocation,
   StudentType,
+  timeSlot,
 } from "@/lib/schema";
 import { GroupedData } from "@/lib/utils";
 import { and, eq } from "drizzle-orm";
@@ -133,3 +138,93 @@ export const getStudentsInModule = async (
     );
   return result;
 };
+
+export const getStudentsPassExam = async (
+  selectedExam: ExamWithDetails
+): Promise<PageStudent[]> => {
+  // Fetch locations
+  const locations = await db
+    .select({
+      id: locationTable.id,
+      name: locationTable.name,
+      type: locationTable.type,
+      size: locationTable.size,
+    })
+    .from(locationTable)
+    .innerJoin(monitoring, eq(monitoring.locationId, locationTable.id))
+    .where(
+      and(
+        eq(locationTable.id, monitoring.locationId),
+        eq(monitoring.examId, selectedExam.examId)
+      )
+    );
+
+  // Fetch exam time slot
+  const examTimeSlot = await db.query.timeSlot.findFirst({
+    where: eq(timeSlot.id, selectedExam.timeSlotId),
+  });
+
+  // Fetch students
+  const students = await db
+    .selectDistinct({
+      cne: student.cne,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      numberOfStudent: studentExamLocation.numberOfStudent,
+      locationId: studentExamLocation.locationId,
+    })
+    .from(studentExamLocation)
+    .innerJoin(student, eq(student.cne, studentExamLocation.cne))
+    .where(eq(studentExamLocation.examId, selectedExam.examId))
+    .orderBy(studentExamLocation.numberOfStudent);
+
+  // Group students by locationId
+  const groupedByLocation: { [key: number]: Student[] } = {};
+  students.forEach((student) => {
+    const locationId = student.locationId;
+    if (!groupedByLocation[locationId]) {
+      groupedByLocation[locationId] = [];
+    }
+    groupedByLocation[locationId].push(student);
+  });
+
+  // Split each group into subgroups of up to 40 students and return results
+  const result: PageStudent[] = Object.keys(groupedByLocation)
+    .map((locationId) => {
+      const studentsInLocation = groupedByLocation[Number(locationId)];
+      const studentGroups: Student[][] = [];
+      for (let i = 0; i < studentsInLocation.length; i += 40) {
+        studentGroups.push(studentsInLocation.slice(i, i + 40));
+      }
+      const selectedLocation = locations.find(
+        (location) => location.id === Number(locationId)
+      );
+      if (selectedLocation) {
+        return {
+          location: selectedLocation,
+          studentGroups,
+        };
+      }
+    })
+    .filter(Boolean) as PageStudent[];
+
+  return result;
+};
+
+interface Student {
+  cne: string;
+  firstName: string;
+  lastName: string;
+  numberOfStudent: number;
+  locationId: number;
+}
+
+interface ExamWithDetails {
+  examId: number;
+  timeSlotId: number;
+}
+
+export interface PageStudent {
+  location: LocationType;
+  studentGroups: Student[][];
+}

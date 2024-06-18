@@ -5,11 +5,11 @@ import { DataTable } from "@/components/ui/data-table";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { useModal } from "@/hooks/useModalStore";
-import { Location } from "@/lib/schema";
+import { LocationType } from "@/lib/schema";
 import { Plus } from "lucide-react";
 import { columns } from "./Columns";
 interface LocationClientProps {
-  data: Location[];
+  data: LocationType[];
 }
 
 export const LocationClient: React.FC<LocationClientProps> = ({ data }) => {

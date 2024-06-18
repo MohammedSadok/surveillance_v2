@@ -2,7 +2,7 @@
 import { db } from "@/lib/config";
 import {
   exam,
-  location,
+  locationTable,
   moduleOption,
   moduleTable,
   ModuleType,
@@ -13,7 +13,7 @@ import {
   StudentType,
   timeSlot,
 } from "@/lib/schema";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 export const createOption = async (newOption: Option) => {
   try {
@@ -64,7 +64,7 @@ export const deleteOption = async (id: string) => {
 export const getStudentsInOption = async (
   optionId: string,
   sessionExamId: number
-): Promise<Omit<StudentType, "id">[]> => {
+): Promise<Omit<StudentType, "id" | "optionId">[]> => {
   try {
     const result = await db
       .select({
@@ -113,14 +113,19 @@ export const getModulesInOption = async (
 };
 
 export const generateStudentsExamOptionSchedule = async (
-  sessionExamId: number
+  sessionExamId: number,
+  optionId: string
 ): Promise<StudentWithExams[]> => {
   try {
     const students = await db
       .select()
       .from(student)
-      .where(eq(student.sessionExamId, sessionExamId))
-
+      .where(
+        and(
+          eq(student.sessionExamId, sessionExamId),
+          eq(student.optionId, optionId)
+        )
+      )
       .as("students");
 
     const exams = await db
@@ -135,22 +140,27 @@ export const generateStudentsExamOptionSchedule = async (
       .where(eq(timeSlot.sessionExamId, sessionExamId))
       .as("exams");
 
-    // console.log(exa)
-
     const schedule = await db
       .select({
         cne: students.cne,
         firstName: students.firstName,
         lastName: students.lastName,
         examModuleId: exams.moduleId,
-        examLocation: location.name,
+        examLocation: locationTable.name,
         numberOfStudent: studentExamLocation.numberOfStudent,
       })
       .from(studentExamLocation)
       .innerJoin(students, eq(studentExamLocation.cne, students.cne))
       .innerJoin(exams, eq(studentExamLocation.examId, exams.id))
-      .innerJoin(location, eq(studentExamLocation.locationId, location.id))
-      .where(eq(students.moduleId, exams.moduleId));
+      .innerJoin(
+        locationTable,
+        eq(studentExamLocation.locationId, locationTable.id)
+      )
+      .where(eq(students.moduleId, exams.moduleId))
+      .orderBy(
+        asc(studentExamLocation.locationId),
+        asc(studentExamLocation.numberOfStudent)
+      );
     const groupedStudents = schedule.reduce((acc, curr) => {
       const existingStudent = acc.find((stu) => stu.cne === curr.cne);
       const examDetails = {

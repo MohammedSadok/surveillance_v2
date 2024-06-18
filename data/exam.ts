@@ -160,6 +160,7 @@ export const getExamsWithDetailsAndCounts = async (
         moduleId: exam.moduleId,
         moduleName: moduleTable.name,
         responsibleName: teacher.lastName,
+        timeSlotId: exam.timeSlotId,
         studentCount: sql<number>`count(${student.id})`.mapWith(Number),
       })
       .from(exam)
@@ -182,6 +183,7 @@ export const getExamsWithDetailsAndCounts = async (
 };
 
 export type ExamWithDetails = {
+  timeSlotId: number;
   examId: number;
   moduleId: string;
   moduleName: string;

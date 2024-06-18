@@ -40,6 +40,18 @@ export type DayWithTimeSlots = {
   timeSlots: TimeSlotWithExams[];
 };
 
+export type TimeSlotWithExamsOption = {
+  id: number;
+  period: string;
+  timePeriod: string;
+  exams: Exam;
+};
+
+export type DayWithTimeSlotsOption = {
+  date: string;
+  timeSlots: TimeSlotWithExams[];
+};
+
 export const expectedColumns = [
   "CODE_ETUDIANT",
   "NOM",
