@@ -11,7 +11,6 @@ const ExamsPage = async ({ params }: Props) => {
   const session = await gestSessionById(parseInt(params.sessionId));
   const exams = await getExamsWithDetailsAndCounts(parseInt(params.timeSlotId));
   const timeSlot = await getTimeSlotById(parseInt(params.timeSlotId));
-
   return (
     <div className="flex-1 space-y-4 pt-2">
       {session && timeSlot && (

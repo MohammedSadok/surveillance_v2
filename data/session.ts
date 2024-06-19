@@ -1,17 +1,30 @@
 "use server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/config";
 import {
   exam,
   moduleOption,
   moduleTable,
+  monitoring,
+  monitoringLine,
+  MonitoringLine,
+  occupiedTeacher,
   SessionExam,
   sessionExam,
   timeSlot,
   users,
 } from "@/lib/schema";
 import { DayWithTimeSlots, DayWithTimeSlotsOption } from "@/lib/utils";
+import {
+  getMonitoringIdsInSession,
+  groupByDateAndPeriod,
+  insertMonitoringLines,
+} from "./monitoring";
+import {
+  getAvailableTeacherIdsForReservists,
+  getFreeTeachersForMonitoring,
+} from "./teacher";
 
 export const LoginUser = async (email: string, password: string) => {
   const result = await db.query.users.findFirst({
@@ -239,3 +252,153 @@ export type CreateSessionType = {
     end: string;
   };
 } & Pick<SessionExam, "startDate" | "endDate" | "type">;
+
+export const validateSession = async (sessionId: number) => {
+  const timeSlots = await getMonitoringIdsInSession(sessionId);
+  let monitoringLines: Omit<MonitoringLine, "id">[] = [];
+  let assignedTeachers: number[] = [];
+  for (const timeSlot of timeSlots) {
+    const { locationTeacherMap, freeTeachers } =
+      await getFreeTeachersForMonitoring(timeSlot.timeSlotId);
+    for (const location of timeSlot.locations) {
+      let neededTeachers: number[] = [];
+      const teacherForLocation = locationTeacherMap.get(location.locationId);
+      if (teacherForLocation !== undefined) {
+        neededTeachers = teacherForLocation;
+      } else {
+        const neededTeacherNumber =
+          location.locationType === "AMPHITHEATER"
+            ? location.locationName === "NO"
+              ? 4
+              : 3
+            : 2;
+        neededTeachers = freeTeachers
+          .slice(0, neededTeacherNumber)
+          .map((teacher) => teacher.id);
+
+        const availableTeachers = freeTeachers.filter(
+          (teacher) => !assignedTeachers.includes(teacher.id)
+        );
+
+        neededTeachers = availableTeachers
+          .slice(0, neededTeacherNumber)
+          .map((teacher) => teacher.id);
+
+        assignedTeachers.push(...neededTeachers);
+      }
+
+      for (const teacherId of neededTeachers) {
+        monitoringLines.push({
+          monitoringId: location.idMonitoring,
+          teacherId,
+        });
+      }
+    }
+    await insertMonitoringLines(monitoringLines);
+    const timeSlotIds = await groupByDateAndPeriod(timeSlots);
+    await assignReservistTeachers(timeSlotIds);
+  }
+  await db
+    .update(sessionExam)
+    .set({ isValidated: true })
+    .where(eq(sessionExam.id, sessionId));
+};
+export const cancelSession = async (sessionId: number) => {
+  try {
+    // Fetch monitoring IDs related to the given session ID
+    const monitoringLines = await db
+      .select({
+        id: monitoring.id,
+      })
+      .from(monitoring)
+      .innerJoin(exam, eq(exam.id, monitoring.examId))
+      .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
+      .where(eq(timeSlot.sessionExamId, sessionId));
+
+    // Extract the monitoring IDs to delete
+    const monitoringToDeleteIds = monitoringLines.map(
+      (monitoringLine) => monitoringLine.id
+    );
+
+    if (monitoringToDeleteIds.length > 0) {
+      // Delete corresponding monitoring lines
+      await db
+        .delete(monitoringLine)
+        .where(inArray(monitoringLine.monitoringId, monitoringToDeleteIds));
+    }
+
+    // Fetch reservist monitoring IDs related to the given session ID
+    const reservistMonitoringLines = await db
+      .select({
+        id: occupiedTeacher.id,
+      })
+      .from(occupiedTeacher)
+      .innerJoin(timeSlot, eq(timeSlot.id, occupiedTeacher.timeSlotId))
+      .where(
+        and(
+          eq(timeSlot.sessionExamId, sessionId),
+          eq(occupiedTeacher.cause, "RR")
+        )
+      );
+
+    // Extract the reservist monitoring IDs to delete
+    const reservistMonitoringToDeleteIds = reservistMonitoringLines.map(
+      (reservistMonitoringLine) => reservistMonitoringLine.id
+    );
+
+    if (reservistMonitoringToDeleteIds.length > 0) {
+      // Delete corresponding reservist monitoring lines
+      await db
+        .delete(occupiedTeacher)
+        .where(inArray(occupiedTeacher.id, reservistMonitoringToDeleteIds));
+    }
+
+    // Update session exam to set isValidated to false
+    await db
+      .update(sessionExam)
+      .set({ isValidated: false })
+      .where(eq(sessionExam.id, sessionId));
+  } catch (error) {
+    console.error("Error cancelling session:", error);
+    throw error;
+  }
+};
+
+export const assignReservistTeachers = async (monitoringSlots: number[][]) => {
+  try {
+    let assignedTeachers: { timeSlotId: number; teacherIds: number[] }[] = [];
+    for (const timeSlotIds of monitoringSlots) {
+      let occupiedLines: {
+        teacherId: number;
+        timeSlotId: number;
+        cause: string;
+      }[] = [];
+      const availableTeacherIds = await getAvailableTeacherIdsForReservists(
+        timeSlotIds[0]
+      );
+
+      // Fetch the number of teachers needed for this timeSlot
+      const neededReservistNumber = 10; // or another logic to determine the needed number of reservists
+      const selectedTeachers = availableTeacherIds.slice(
+        0,
+        neededReservistNumber
+      );
+      for (const timeSlotId of timeSlotIds) {
+        assignedTeachers.push({ timeSlotId, teacherIds: selectedTeachers });
+        // Update the database to mark these teachers as occupied for this time slot
+        for (const teacherId of selectedTeachers) {
+          occupiedLines.push({
+            teacherId,
+            timeSlotId,
+            cause: "RR",
+          });
+        }
+      }
+      await db.insert(occupiedTeacher).values(occupiedLines);
+    }
+    return assignedTeachers;
+  } catch (error) {
+    console.error("Error assigning reservist teachers:", error);
+    throw error;
+  }
+};

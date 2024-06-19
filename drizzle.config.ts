@@ -7,6 +7,6 @@ export default defineConfig({
   dbCredentials: {
     url: "mysql://root:@localhost:3306/app",
   },
-  verbose: true,
+  // verbose: true,
   strict: true,
 });

@@ -1,6 +1,6 @@
 import { AlertModal } from "@/components/modals/alert-modal";
 import { Button } from "@/components/ui/button";
-import { deleteSession } from "@/data/session";
+import { cancelSession, deleteSession, validateSession } from "@/data/session";
 import { SessionExam } from "@/lib/schema";
 import { Ban, CheckCircle, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       if (confirmedAction === "delete") await deleteSession(data.id);
+      else if (confirmedAction === "validate") await validateSession(data.id);
+      else await cancelSession(data.id);
       toast.success(
         confirmedAction === "delete"
           ? "Session supprimée."

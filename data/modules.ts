@@ -131,15 +131,35 @@ export const getModulesForExam = async (
   timeSlotId: number
 ): Promise<ModuleType[]> => {
   try {
+    // Get option IDs associated with exams in the specified time slot
     const options = await getOptionIdsWithExamsInTimeSlot(timeSlotId);
+
+    // Get the current time slot details
+    const selectedTimeSlot = await getTimeSlotById(timeSlotId);
+
+    // Initialize an array for module IDs that already have exams
+    let existingModuleIds: string[] = [];
+
+    if (selectedTimeSlot) {
+      // Get module IDs that already have exams in the same session but on different days
+      existingModuleIds = await getModulesAlreadyHaveExam(
+        selectedTimeSlot.sessionExamId
+      ).then((modules) => modules.map((module) => module.id));
+    }
+
+    // Prepare the base query to fetch distinct modules
+    let query = db
+      .selectDistinct({
+        id: moduleTable.id,
+        name: moduleTable.name,
+      })
+      .from(moduleTable)
+      .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId));
+
+    let distinctModules: ModuleType[] = [];
+    // Apply the option filter only if there are options
     if (options.length > 0) {
-      const selectedTimeSlotId = await getTimeSlotById(timeSlotId);
-      let moduleIds: string[] = [];
-      if (selectedTimeSlotId)
-        moduleIds = await getModulesAlreadyHaveExam(
-          selectedTimeSlotId.sessionExamId
-        ).then((modules) => modules.map((module) => module.id));
-      const result = await db
+      distinctModules = await db
         .selectDistinct({
           id: moduleTable.id,
           name: moduleTable.name,
@@ -147,11 +167,22 @@ export const getModulesForExam = async (
         .from(moduleTable)
         .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
         .where(notInArray(moduleOption.optionId, options));
-      return result.filter((module) => !moduleIds.includes(module.id));
     } else {
-      const result = await db.select().from(moduleTable);
-      return result;
+      distinctModules = await db
+        .selectDistinct({
+          id: moduleTable.id,
+          name: moduleTable.name,
+        })
+        .from(moduleTable)
+        .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId));
     }
+
+    // Filter out modules that already have exams in the same session but on different days
+    const result = distinctModules.filter(
+      (module) => !existingModuleIds.includes(module.id)
+    );
+
+    return result;
   } catch (error) {
     console.error(
       "Erreur lors de la récupération des modules pour l'examen:",

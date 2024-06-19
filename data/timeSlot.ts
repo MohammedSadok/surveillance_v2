@@ -46,3 +46,46 @@ export const getTimeSlotsInSameDayAndPeriod = async (timeSlotId: number) => {
     throw error;
   }
 };
+
+export const getTimeSlotsInSession = async (sessionId: number) => {
+  try {
+    const result = await db
+      .select()
+      .from(timeSlot)
+      .where(eq(timeSlot.sessionExamId, sessionId));
+    return result;
+  } catch (error) {
+    console.error("Error fetching time slots in session:", error);
+    throw error;
+  }
+};
+
+export const getTimeSlotsInSameDay = async (timeSlotId: number) => {
+  try {
+    const selectedTimeSlot = await getTimeSlotById(timeSlotId);
+    if (selectedTimeSlot) {
+      const timeSlotsInSameDay = await db.execute<TimeSlot[]>(
+        sql`
+        SELECT * FROM ${timeSlot}
+        WHERE ${timeSlot.date} = ${format(selectedTimeSlot.date, "yyyy-MM-dd")}
+      `
+      );
+
+      const timeSlotInSamePeriod: TimeSlot[] = timeSlotsInSameDay[0].map(
+        (timeSlot: any) => {
+          return {
+            id: timeSlot.id,
+            date: timeSlot.date,
+            period: timeSlot.period,
+            timePeriod: `${timeSlot.startTime}-${timeSlot.endTime}`,
+          };
+        }
+      );
+      return timeSlotInSamePeriod;
+    }
+  } catch (error) {
+    console.error("Error fetching time slots in the same day:", error);
+    throw error;
+  }
+  return [];
+};
