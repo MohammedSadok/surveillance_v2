@@ -1,8 +1,9 @@
 "use server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/config";
 import {
+  department,
   exam,
   moduleOption,
   moduleTable,
@@ -12,10 +13,12 @@ import {
   occupiedTeacher,
   SessionExam,
   sessionExam,
+  teacher,
   timeSlot,
   users,
 } from "@/lib/schema";
 import { DayWithTimeSlots, DayWithTimeSlotsOption } from "@/lib/utils";
+import { format } from "date-fns";
 import {
   getMonitoringIdsInSession,
   groupByDateAndPeriod,
@@ -399,6 +402,104 @@ export const assignReservistTeachers = async (monitoringSlots: number[][]) => {
     return assignedTeachers;
   } catch (error) {
     console.error("Error assigning reservist teachers:", error);
+    throw error;
+  }
+};
+interface Statistics {
+  numberOfExams: number;
+  numberOfTeachers: number;
+  numberOfDepartments: number;
+  totalMonitoring: number;
+  lastFiveExams: {
+    id: number;
+    module: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  }[];
+  examsPerDay: {
+    day: string;
+    total: number;
+  }[];
+}
+
+export const getStatisticsOfLastSession = async (): Promise<Statistics> => {
+  try {
+    const lastSession = await db.query.sessionExam.findFirst({
+      orderBy: [desc(sessionExam.id)],
+    });
+
+    if (!lastSession) {
+      throw new Error("No sessions found.");
+    }
+
+    const totalMonitoring = await db
+      .select({
+        total: count(monitoring.id).as("total"),
+      })
+      .from(monitoringLine)
+      .innerJoin(monitoring, eq(monitoring.id, monitoringLine.monitoringId))
+      .innerJoin(exam, eq(exam.id, monitoring.examId))
+      .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
+      .where(eq(timeSlot.sessionExamId, lastSession.id));
+
+    const numberOfExams = await db
+      .select({
+        total: count(exam.id).as("total"),
+      })
+      .from(exam)
+      .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
+      .where(eq(timeSlot.sessionExamId, lastSession.id));
+
+    const numberOfTeachers = await db
+      .select({
+        total: count(teacher.id).as("total"),
+      })
+      .from(teacher);
+
+    const numberOfDepartments = await db
+      .select({
+        total: count(department.id).as("total"),
+      })
+      .from(department);
+    const numberOfExamsPerDay = await db
+      .select({
+        day: timeSlot.date,
+        total: count(exam.id),
+      })
+      .from(exam)
+      .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
+      .groupBy(timeSlot.date);
+
+    const examsPerDay = numberOfExamsPerDay.map((exam) => ({
+      day: format(new Date(exam.day), "MMMM do, yyyy"), // Formatting date
+      total: exam.total,
+    }));
+
+    const lastFiveExams = await db
+      .select({
+        id: exam.id,
+        module: moduleTable.name,
+        firstName: teacher.firstName,
+        lastName: teacher.lastName,
+        email: teacher.email,
+      })
+      .from(exam)
+      .orderBy(desc(exam.id))
+      .limit(5)
+      .innerJoin(moduleTable, eq(moduleTable.id, exam.moduleId))
+      .innerJoin(teacher, eq(teacher.id, exam.responsibleId));
+
+    return {
+      lastFiveExams: lastFiveExams,
+      examsPerDay: examsPerDay,
+      totalMonitoring: totalMonitoring[0].total,
+      numberOfExams: numberOfExams[0].total,
+      numberOfTeachers: numberOfTeachers[0].total,
+      numberOfDepartments: numberOfDepartments[0].total,
+    };
+  } catch (error) {
+    console.error("Error getting statistics of last session:", error);
     throw error;
   }
 };

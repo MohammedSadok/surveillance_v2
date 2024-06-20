@@ -22,33 +22,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DayWithTimeSlotsAndMonitoring } from "@/data/monitoring";
+import {
+  DayWithTimeSlotsAndMonitoring,
+  getDaysWithMonitoringDep,
+} from "@/data/monitoring";
 // Assurez-vous que le type est correct
 import logo from "@/images/logo.png";
 import { Department } from "@/lib/schema";
 import { ArrowLeftCircle, ArrowRightCircle, FileDown } from "lucide-react";
 import Image from "next/image";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import PrintTeacherMonitoring from "./print/PrintTeacherMonitoring";
+import { Loader } from "./ui/loader";
 
 interface TeacherMonitoringProps {
-  sessionDays: DayWithTimeSlotsAndMonitoring[];
   departments: Department[];
+  sessionId: number;
 }
 
 const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
   departments,
-  sessionDays,
+  sessionId,
 }) => {
+  const [selectedDepartment, setSelectedDepartment] = useState<number>(
+    departments[0].id
+  );
+  const [sessionDays, setSessionDays] = useState<
+    DayWithTimeSlotsAndMonitoring[]
+  >([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentRangeStart, setCurrentRangeStart] = useState(0);
-  const [selectedDepartment, setSelectedDepartment] = useState<number | null>(
-    null
-  );
+  const [loading, setLoading] = useState(false);
   const itemsPerPage = 30;
   const daysPerRange = 3;
   const componentRef = useRef<any>();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const result = await getDaysWithMonitoringDep(
+        sessionId,
+        selectedDepartment
+      );
+      setSessionDays(result);
+      setLoading(false);
+    };
+    fetchData();
+  }, [selectedDepartment, sessionId]);
+
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
   });
@@ -77,15 +99,9 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
     day.timeSlots.flatMap((slot) => slot.monitoring)
   );
 
-  const filteredTeachers = selectedDepartment
-    ? allTeachers.filter(
-        (teacher) => teacher.departmentId === selectedDepartment
-      )
-    : allTeachers;
-
   const uniqueTeachers = Array.from(
     new Set(
-      filteredTeachers.map(
+      allTeachers.map(
         (teacher) => teacher.teacherFirstName + " " + teacher.teacherLastName
       )
     )
@@ -110,9 +126,6 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
             <SelectValue placeholder="Sélectionnez le département" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={"0"} key={0}>
-              Tous
-            </SelectItem>
             {departments.length &&
               departments.map((item) => (
                 <SelectItem value={item.id.toString()} key={item.id}>
@@ -125,90 +138,96 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
           <FileDown />
         </Button>
       </div>
-      <Table className="border rounded-lg">
-        <TableHeader>
-          <TableRow key={10}>
-            <TableCell
-              className="border text-center text-xs p-0.5 w-1/12"
-              rowSpan={2}
-            >
-              Enseignants
-            </TableCell>
-
-            {displayedDays.map((day, index) => (
+      {loading ? (
+        <div className="flex justify-center items-center h-96">
+          <Loader />
+        </div>
+      ) : (
+        <Table className="border rounded-lg">
+          <TableHeader>
+            <TableRow key={10}>
               <TableCell
-                key={day.date}
-                className="border text-center p-1 text-xs relative"
-                colSpan={day.timeSlots.length}
+                className="border text-center text-xs p-0.5 w-1/12"
+                rowSpan={2}
               >
-                {index === 0 && (
-                  <Button
-                    onClick={previousDays}
-                    variant="ghost"
-                    className="p-2 absolute left-0 top-1/2 transform -translate-y-1/2"
-                  >
-                    <ArrowLeftCircle className="w-5 h-5" />
-                  </Button>
-                )}
-
-                {day.date}
-
-                {index === displayedDays.length - 1 && (
-                  <Button
-                    onClick={nextDays}
-                    variant="ghost"
-                    className="p-2 absolute right-0 top-1/2 transform -translate-y-1/2"
-                  >
-                    <ArrowRightCircle className="w-5 h-5" />
-                  </Button>
-                )}
+                Enseignants
               </TableCell>
-            ))}
-          </TableRow>
-          <TableRow key={11}>
-            {displayedDays
-              .flatMap((day) => day.timeSlots)
-              .map((timeSlotItem) => (
+
+              {displayedDays.map((day, index) => (
                 <TableCell
-                  key={timeSlotItem.id}
-                  className="border text-center text-xs p-0"
+                  key={day.date}
+                  className="border text-center p-1 text-xs relative"
+                  colSpan={day.timeSlots.length}
                 >
-                  {timeSlotItem.period}
+                  {index === 0 && (
+                    <Button
+                      onClick={previousDays}
+                      variant="ghost"
+                      className="p-2 absolute left-0 top-1/2 transform -translate-y-1/2"
+                    >
+                      <ArrowLeftCircle className="w-5 h-5" />
+                    </Button>
+                  )}
+
+                  {day.date}
+
+                  {index === displayedDays.length - 1 && (
+                    <Button
+                      onClick={nextDays}
+                      variant="ghost"
+                      className="p-2 absolute right-0 top-1/2 transform -translate-y-1/2"
+                    >
+                      <ArrowRightCircle className="w-5 h-5" />
+                    </Button>
+                  )}
                 </TableCell>
               ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {displayedTeachers.map((teacher, index) => (
-            <TableRow key={index} className="py-4">
-              <TableCell className="border text-center text-xs p-0.2">
-                {teacher}
-              </TableCell>
+            </TableRow>
+            <TableRow key={11}>
               {displayedDays
                 .flatMap((day) => day.timeSlots)
-                .map((timeSlotItem) => {
-                  const monitoringLine = filteredTeachers.find(
-                    (monitoring) =>
-                      monitoring.teacherFirstName +
-                        " " +
-                        monitoring.teacherLastName ===
-                        teacher && monitoring.timeSlotId === timeSlotItem.id
-                  );
-                  return (
-                    <TableCell
-                      key={timeSlotItem.id}
-                      className="border text-center text-xs p-0.2 w-8"
-                    >
-                      {monitoringLine ? (
-                        <span>{monitoringLine.cause}</span>
-                      ) : null}
-                    </TableCell>
-                  );
-                })}
+                .map((timeSlotItem) => (
+                  <TableCell
+                    key={timeSlotItem.id}
+                    className="border text-center text-xs p-0"
+                  >
+                    {timeSlotItem.period}
+                  </TableCell>
+                ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {displayedTeachers.map((teacher, index) => (
+              <TableRow key={index} className="py-4">
+                <TableCell className="border text-center text-xs p-0.2">
+                  {teacher}
+                </TableCell>
+                {displayedDays
+                  .flatMap((day) => day.timeSlots)
+                  .map((timeSlotItem) => {
+                    const monitoringLine = allTeachers.find(
+                      (monitoring) =>
+                        monitoring.teacherFirstName +
+                          " " +
+                          monitoring.teacherLastName ===
+                          teacher && monitoring.timeSlotId === timeSlotItem.id
+                    );
+                    return (
+                      <TableCell
+                        key={timeSlotItem.id}
+                        className="border text-center text-xs p-0.2 w-8"
+                      >
+                        {monitoringLine ? (
+                          <span>{monitoringLine.cause}</span>
+                        ) : null}
+                      </TableCell>
+                    );
+                  })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       <Pagination className="flex flex-col">
         <PaginationContent className="self-end">
@@ -253,10 +272,8 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
               className="w-[200px]"
             />
             <p className="capitalize text-xl">
-              {selectedDepartment != null
-                ? "Département: " +
-                  departments.find((dep) => dep.id == selectedDepartment)?.name
-                : null}
+              {"Département: " +
+                departments.find((dep) => dep.id == selectedDepartment)?.name}
             </p>
           </div>
 

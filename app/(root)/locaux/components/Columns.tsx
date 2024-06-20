@@ -1,8 +1,8 @@
 "use client";
-import { Location } from "@/lib/schema";
+import { LocationType } from "@/lib/schema";
 import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./CellAction";
-export const columns: ColumnDef<Location>[] = [
+export const columns: ColumnDef<LocationType>[] = [
   {
     accessorKey: "name",
     header: "Nom",

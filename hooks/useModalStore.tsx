@@ -1,14 +1,17 @@
 import {
   Department,
   Exam,
-  Location,
+  LocationType,
   SessionExam,
+  StudentType,
   Teacher,
   User,
 } from "@/lib/schema";
 import { create } from "zustand";
 
 export type ModalType =
+  | "createStudent"
+  | "updateStudent"
   | "createSession"
   | "createDepartment"
   | "updateDepartment"
@@ -21,10 +24,11 @@ export type ModalType =
   | "updateUser";
 
 interface ModalData {
+  student?: StudentType;
   session?: SessionExam;
   department?: Department;
   departments?: Department[];
-  building?: Location;
+  building?: LocationType;
   teacher?: Teacher;
   user?: User;
   exam?: Exam;

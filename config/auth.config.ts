@@ -1,4 +1,4 @@
-import { getUserByEmail } from "@/lib/query";
+import { getUserByEmail } from "@/data/session";
 import { LoginSchema } from "@/lib/validator";
 import bcrypt from "bcryptjs";
 import type { NextAuthConfig } from "next-auth";

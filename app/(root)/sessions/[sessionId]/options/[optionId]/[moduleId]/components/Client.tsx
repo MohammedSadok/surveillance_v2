@@ -37,8 +37,8 @@ export const StudentClient: React.FC<StudentClientProps> = ({
           title={`Étudiants (${data.length})`}
           description={`Gérer les étudiants de l'option ${option.name} du module ${module.name}`}
         />
-        <Button onClick={() => onOpen("createSession")}>
-          <Plus className="mr-2 h-4 w-4" /> Ajouter un noveau module
+        <Button onClick={() => onOpen("createStudent")}>
+          <Plus className="mr-2 h-4 w-4" /> Ajouter un nouvel étudiant
         </Button>
       </div>
       <DataTable searchKey="cne" columns={tableColumns} data={data} />

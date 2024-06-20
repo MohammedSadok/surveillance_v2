@@ -41,7 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-
 const SessionModal = () => {
   const { isOpen, onClose, type } = useModal();
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +87,9 @@ const SessionModal = () => {
           const fileColumns = fileData[0];
           if (
             fileColumns.length !== expectedColumns.length ||
-            !fileColumns.every((col, index) => col === expectedColumns[index])
+            !fileColumns.every(
+              (col: string, index: number) => col === expectedColumns[index]
+            )
           ) {
             toast.error("Le fichier ne correspond pas au format attendu.");
             setIsLoading(false);

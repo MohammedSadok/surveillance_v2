@@ -12,7 +12,7 @@ import {
   teacher,
   timeSlot,
 } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getLocations } from "./location";
 export const createMonitoring = async (
   newMonitoring: Omit<Monitoring, "id">
@@ -90,8 +90,9 @@ export type DayWithTimeSlotsAndMonitoring = {
   timeSlots: TimeSlotWithMonitoring[];
 };
 
-export const getDaysWithMonitoring = async (
-  sessionId: number
+export const getDaysWithMonitoringDep = async (
+  sessionId: number,
+  departmentId: number
 ): Promise<DayWithTimeSlotsAndMonitoring[]> => {
   try {
     // Fetching the teachers who are monitoring
@@ -114,13 +115,19 @@ export const getDaysWithMonitoring = async (
       .from(timeSlot)
       .leftJoin(occupiedTeacher, eq(occupiedTeacher.timeSlotId, timeSlot.id))
       .leftJoin(teacher, eq(teacher.id, occupiedTeacher.teacherId))
-      .where(eq(timeSlot.sessionExamId, sessionId))
+      .where(
+        and(
+          eq(timeSlot.sessionExamId, sessionId),
+          eq(teacher.departmentId, departmentId)
+        )
+      )
       .orderBy(timeSlot.date);
 
     // Fetching all teachers
     const allTeachers = await db
       .select()
       .from(teacher)
+      .where(eq(teacher.departmentId, departmentId))
       .orderBy(teacher.lastName, teacher.firstName);
 
     const days = result.reduce((acc, row) => {

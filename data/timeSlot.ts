@@ -29,6 +29,7 @@ export const getTimeSlotsInSameDayAndPeriod = async (timeSlotId: number) => {
         )} and ${timeSlot.period} = ${selectedTimeSlot.period}
       `
       );
+      // @ts-ignore: Property 'map' does not exist on type 'ResultSetHeader'
       const timeSlotInSamePeriod: TimeSlot[] = timeSlotInSameDay[0].map(
         (timeSlot: any) => {
           return {
@@ -70,7 +71,7 @@ export const getTimeSlotsInSameDay = async (timeSlotId: number) => {
         WHERE ${timeSlot.date} = ${format(selectedTimeSlot.date, "yyyy-MM-dd")}
       `
       );
-
+      // @ts-ignore: Property 'map' does not exist on type 'ResultSetHeader'
       const timeSlotInSamePeriod: TimeSlot[] = timeSlotsInSameDay[0].map(
         (timeSlot: any) => {
           return {

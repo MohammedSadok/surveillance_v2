@@ -40,6 +40,17 @@ export const DepartmentSchema = z.object({
     message: "Le nom doit contenir au moins 3 caractères.",
   }),
 });
+export const NewStudentSchema = z.object({
+  cne: z.string().min(6, {
+    message: "Le CNE doit contenir au moins 6 caractères.",
+  }),
+  lastName: z.string().min(3, {
+    message: "Le nom doit contenir au moins 3 caractères.",
+  }),
+  firstName: z.string().min(3, {
+    message: "Le prénom doit contenir au moins 3 caractères.",
+  }),
+});
 
 export const TeacherSchema = z.object({
   lastName: z.string().min(3, {

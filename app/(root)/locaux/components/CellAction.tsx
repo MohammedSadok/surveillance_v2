@@ -11,14 +11,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { deleteLocation } from "@/data/location";
 import { useModal } from "@/hooks/useModalStore";
-import { Location } from "@/lib/schema";
+import { LocationType } from "@/lib/schema";
 import { Edit, MoreHorizontal, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
 interface CellActionProps {
-  data: Location;
+  data: LocationType;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {

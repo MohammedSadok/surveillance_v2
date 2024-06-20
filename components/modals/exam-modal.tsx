@@ -35,7 +35,7 @@ import { getFreeLocations } from "@/data/location";
 import { getModulesForExam, getNumberOfStudentsInModule } from "@/data/modules";
 import { getFreeTeachersByDepartment } from "@/data/teacher";
 import { useModal } from "@/hooks/useModalStore";
-import { Department, Location, ModuleType, Teacher } from "@/lib/schema";
+import { Department, LocationType, ModuleType, Teacher } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { ExamSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -61,7 +61,7 @@ const ExamModal = () => {
   const { exam } = data;
   const [departments, setDepartments] = useState<Department[]>([]);
   const [modules, setModules] = useState<Omit<ModuleType, "optionId">[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<LocationType[]>([]);
   const [department, setDepartment] = useState<number | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [error, setError] = useState<string | undefined>("");

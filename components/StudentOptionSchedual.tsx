@@ -55,8 +55,6 @@ interface StudentOptionScheduleProps {
 const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
   options,
   sessionId,
-  // modules,
-  // students,
 }) => {
   const [students, setStudents] = useState<StudentWithExams[]>([]);
   const [modules, setModules] = useState<ModuleType[]>([]);
@@ -160,7 +158,7 @@ const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
         </Button>
       </div>
       {loading ? (
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex justify-center items-center h-96">
           <Loader />
         </div>
       ) : (

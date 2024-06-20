@@ -20,6 +20,17 @@ import { and, eq } from "drizzle-orm";
 export const insertStudents = async (students: Omit<StudentType, "id">[]) => {
   await db.insert(student).values(students);
 };
+export const insertStudent = async (students: Omit<StudentType, "id">) => {
+  await db.insert(student).values(students);
+};
+
+export const updateStudent = async (newStudent: StudentType) => {
+  await db.update(student).set(newStudent).where(eq(student.id, newStudent.id));
+};
+
+export const deleteStudent = async (id: number) => {
+  await db.delete(student).where(eq(student.id, id));
+};
 
 export const insertOption = async (newOption: Option) => {
   await db.insert(option).values(newOption);
