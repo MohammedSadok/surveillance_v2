@@ -74,6 +74,7 @@ CREATE TABLE `student` (
 	`lastName` varchar(50) NOT NULL,
 	`sessionExamId` int NOT NULL,
 	`moduleId` varchar(20) NOT NULL,
+	`optionId` varchar(20) NOT NULL,
 	CONSTRAINT `student_id` PRIMARY KEY(`id`)
 ) ENGINE = InnoDB;
 CREATE TABLE `studentExamLocation` (
@@ -141,6 +142,8 @@ ALTER TABLE `student`
 ADD CONSTRAINT `student_sessionExamId_sessionExam_id_fk` FOREIGN KEY (`sessionExamId`) REFERENCES `sessionExam`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `student`
 ADD CONSTRAINT `student_moduleId_module_id_fk` FOREIGN KEY (`moduleId`) REFERENCES `module`(`id`) ON DELETE cascade ON UPDATE cascade;
+ALTER TABLE `student`
+ADD CONSTRAINT `student_optionId_option_id_fk` FOREIGN KEY (`optionId`) REFERENCES `option`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `studentExamLocation`
 ADD CONSTRAINT `studentExamLocation_locationId_location_id_fk` FOREIGN KEY (`locationId`) REFERENCES `location`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `studentExamLocation`
