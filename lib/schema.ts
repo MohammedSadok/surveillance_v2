@@ -1,37 +1,36 @@
 import {
   boolean,
   date,
-  int,
-  mysqlEnum,
-  mysqlTable,
+  pgEnum,
+  pgTable,
+  serial,
   varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
 // Enums
 export const TimePeriod = ["MORNING", "AFTERNOON"] as const;
-export const RoomType = ["CLASSROOM", "AMPHITHEATER"] as const;
-
-export const users = mysqlTable("user", {
-  id: int("id").autoincrement().primaryKey(),
+export const RoomType = pgEnum("RoomType", ["CLASSROOM", "AMPHITHEATER"]);
+export const users = pgTable("user", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 50 }).notNull().unique(),
   password: varchar("password", { length: 100 }).notNull(),
   isAdmin: boolean("isAdmin").notNull().default(false),
 });
 
-export const sessionExam = mysqlTable("sessionExam", {
-  id: int("id").autoincrement().primaryKey(),
+export const sessionExam = pgTable("sessionExam", {
+  id: serial("id").primaryKey(),
   isValidated: boolean("isValidated").notNull().default(false),
   type: varchar("type", { length: 50 }).notNull(),
   startDate: date("startDate").notNull(),
   endDate: date("endDate").notNull(),
 });
 
-export const timeSlot = mysqlTable("timeSlot", {
-  id: int("id").autoincrement().primaryKey(),
+export const timeSlot = pgTable("timeSlot", {
+  id: serial("id").primaryKey(),
   date: date("date").notNull(),
   period: varchar("period", { length: 20 }).notNull(),
   timePeriod: varchar("timePeriod", { length: 20 }).notNull(),
-  sessionExamId: int("sessionExamId")
+  sessionExamId: serial("sessionExamId")
     .references(() => sessionExam.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
@@ -39,18 +38,18 @@ export const timeSlot = mysqlTable("timeSlot", {
     .notNull(),
 });
 
-export const option = mysqlTable("option", {
+export const option = pgTable("option", {
   id: varchar("id", { length: 20 }).primaryKey(),
   name: varchar("name", { length: 50 }).notNull(),
 });
 
-export const moduleTable = mysqlTable("module", {
+export const moduleTable = pgTable("module", {
   id: varchar("id", { length: 20 }).primaryKey(),
-  name: varchar("name", { length: 50 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
 });
 
-export const moduleOption = mysqlTable("moduleOption", {
-  id: int("id").autoincrement().primaryKey(),
+export const moduleOption = pgTable("moduleOption", {
+  id: serial("id").primaryKey(),
   moduleId: varchar("moduleId", { length: 20 })
     .references(() => moduleTable.id, {
       onDelete: "cascade",
@@ -65,21 +64,21 @@ export const moduleOption = mysqlTable("moduleOption", {
     .notNull(),
 });
 
-export const exam = mysqlTable("exam", {
-  id: int("id").autoincrement().primaryKey(),
+export const exam = pgTable("exam", {
+  id: serial("id").primaryKey(),
   moduleId: varchar("module", { length: 20 })
     .references(() => moduleTable.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     })
     .notNull(),
-  timeSlotId: int("timeSlotId")
+  timeSlotId: serial("timeSlotId")
     .references(() => timeSlot.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     })
     .notNull(),
-  responsibleId: int("responsibleId")
+  responsibleId: serial("responsibleId")
     .references(() => teacher.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
@@ -87,12 +86,12 @@ export const exam = mysqlTable("exam", {
     .notNull(),
 });
 
-export const student = mysqlTable("student", {
-  id: int("id").autoincrement().primaryKey(),
+export const student = pgTable("student", {
+  id: serial("id").primaryKey(),
   cne: varchar("cne", { length: 20 }).notNull(),
   firstName: varchar("firstName", { length: 50 }).notNull(),
   lastName: varchar("lastName", { length: 50 }).notNull(),
-  sessionExamId: int("sessionExamId")
+  sessionExamId: serial("sessionExamId")
     .references(() => sessionExam.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
@@ -111,36 +110,36 @@ export const student = mysqlTable("student", {
     })
     .notNull(),
 });
-export const studentExamLocation = mysqlTable("studentExamLocation", {
-  id: int("id").autoincrement().primaryKey(),
+export const studentExamLocation = pgTable("studentExamLocation", {
+  id: serial("id").primaryKey(),
   cne: varchar("cne", { length: 20 }).notNull(),
-  numberOfStudent: int("numberOfStudent").notNull(),
-  locationId: int("locationId")
+  numberOfStudent: serial("numberOfStudent").notNull(),
+  locationId: serial("locationId")
     .references(() => locationTable.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     })
     .notNull(),
-  examId: int("examId")
+  examId: serial("examId")
     .references(() => exam.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     })
     .notNull(),
 });
-export const department = mysqlTable("department", {
-  id: int("id").autoincrement().primaryKey(),
+export const department = pgTable("department", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
 });
 
-export const teacher = mysqlTable("teacher", {
-  id: int("id").autoincrement().primaryKey(),
+export const teacher = pgTable("teacher", {
+  id: serial("id").primaryKey(),
   lastName: varchar("lastName", { length: 50 }).notNull(),
   firstName: varchar("firstName", { length: 50 }).notNull(),
   phoneNumber: varchar("phoneNumber", { length: 15 }).notNull(),
   email: varchar("email", { length: 50 }).notNull(),
   isDispense: boolean("isDispense").notNull().default(false),
-  departmentId: int("departmentId")
+  departmentId: serial("departmentId")
     .references(() => department.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
@@ -148,23 +147,23 @@ export const teacher = mysqlTable("teacher", {
     .notNull(),
 });
 
-export const occupiedTeacher = mysqlTable("occupiedTeacher", {
-  id: int("id").autoincrement().primaryKey(),
+export const occupiedTeacher = pgTable("occupiedTeacher", {
+  id: serial("id").primaryKey(),
   cause: varchar("cause", { length: 50 }).notNull(),
-  teacherId: int("teacherId")
+  teacherId: serial("teacherId")
     .references(() => teacher.id, { onDelete: "cascade", onUpdate: "cascade" })
     .notNull(),
-  timeSlotId: int("timeSlotId")
+  timeSlotId: serial("timeSlotId")
     .references(() => timeSlot.id, { onDelete: "cascade", onUpdate: "cascade" })
     .notNull(),
 });
 
-export const monitoring = mysqlTable("monitoring", {
-  id: int("id").autoincrement().primaryKey(),
-  examId: int("examId")
+export const monitoring = pgTable("monitoring", {
+  id: serial("id").primaryKey(),
+  examId: serial("examId")
     .references(() => exam.id, { onDelete: "cascade", onUpdate: "cascade" })
     .notNull(),
-  locationId: int("locationId")
+  locationId: serial("locationId")
     .references(() => locationTable.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
@@ -172,12 +171,12 @@ export const monitoring = mysqlTable("monitoring", {
     .notNull(),
 });
 
-export const monitoringLine = mysqlTable("monitoringLine", {
-  id: int("id").autoincrement().primaryKey(),
-  teacherId: int("teacherId")
+export const monitoringLine = pgTable("monitoringLine", {
+  id: serial("id").primaryKey(),
+  teacherId: serial("teacherId")
     .references(() => teacher.id, { onDelete: "cascade", onUpdate: "cascade" })
     .notNull(),
-  monitoringId: int("monitoringId")
+  monitoringId: serial("monitoringId")
     .references(() => monitoring.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
@@ -185,23 +184,23 @@ export const monitoringLine = mysqlTable("monitoringLine", {
     .notNull(),
 });
 
-export const locationTable = mysqlTable("location", {
-  id: int("id").autoincrement().primaryKey(),
+export const locationTable = pgTable("location", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
-  size: int("size").notNull(),
-  type: mysqlEnum("type", RoomType).notNull(),
+  size: serial("size").notNull(),
+  type: RoomType("type").notNull(),
 });
 
-export const occupiedLocation = mysqlTable("occupiedLocation", {
-  id: int("id").autoincrement().primaryKey(),
+export const occupiedLocation = pgTable("occupiedLocation", {
+  id: serial("id").primaryKey(),
   cause: varchar("cause", { length: 50 }).notNull(),
-  locationId: int("locationId")
+  locationId: serial("locationId")
     .references(() => locationTable.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     })
     .notNull(),
-  timeSlotId: int("timeSlotId")
+  timeSlotId: serial("timeSlotId")
     .references(() => timeSlot.id, { onDelete: "cascade", onUpdate: "cascade" })
     .notNull(),
 });

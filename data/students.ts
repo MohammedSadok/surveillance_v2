@@ -1,5 +1,6 @@
 "use server";
-import { db } from "@/lib/config";
+
+import db from "@/lib/config";
 import {
   locationTable,
   LocationType,
@@ -69,27 +70,29 @@ export const getStudentsInOptionAndModule = async (
 };
 
 export const getModuleById = async (id: string) => {
-  const result = await db.query.moduleTable.findFirst({
-    where: and(eq(moduleTable.id, id)),
-  });
-  return result || null;
+  const result = await db
+    .select()
+    .from(moduleTable)
+    .where(eq(moduleTable.id, id));
+  return result[0] || null;
 };
 
 export const getModuleInOption = async (moduleId: string, optionId: string) => {
-  const result = await db.query.moduleOption.findFirst({
-    where: and(
-      eq(moduleOption.moduleId, moduleId),
-      eq(moduleOption.optionId, optionId)
-    ),
-  });
-  return result || null;
+  const result = await db
+    .select()
+    .from(moduleOption)
+    .where(
+      and(
+        eq(moduleOption.moduleId, moduleId),
+        eq(moduleOption.optionId, optionId)
+      )
+    );
+  return result[0] || null;
 };
 
 export const getOptionById = async (id: string) => {
-  const result = await db.query.option.findFirst({
-    where: eq(option.id, id),
-  });
-  return result || null;
+  const result = await db.select().from(option).where(eq(option.id, id));
+  return result[0] || null;
 };
 export const insertOptionsAndModules = async (
   optionsAndModules: GroupedData
@@ -171,9 +174,10 @@ export const getStudentsPassExam = async (
     );
 
   // Fetch exam time slot
-  const examTimeSlot = await db.query.timeSlot.findFirst({
-    where: eq(timeSlot.id, selectedExam.timeSlotId),
-  });
+  const examTimeSlot = await db
+    .select()
+    .from(timeSlot)
+    .where(eq(timeSlot.id, selectedExam.timeSlotId));
 
   // Fetch students
   const students = await db

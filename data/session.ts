@@ -1,7 +1,7 @@
 "use server";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 
-import { db } from "@/lib/config";
+import db from "@/lib/config";
 import {
   department,
   exam,
@@ -30,24 +30,21 @@ import {
 } from "./teacher";
 
 export const LoginUser = async (email: string, password: string) => {
-  const result = await db.query.users.findFirst({
-    where: and(eq(users.email, email), eq(users.password, password)),
-  });
-  return result || null;
+  const result = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.email, email), eq(users.password, password)));
+  return result[0] || null;
 };
 
 export const getUserByEmail = async (email: string) => {
-  const result = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
-  return { email: result?.email, password: result?.password } || null;
+  const result = await db.select().from(users).where(eq(users.email, email));
+  return { email: result[0]?.email, password: result[0]?.password } || null;
 };
 
 export const getUserById = async (id: number) => {
-  const result = await db.query.users.findFirst({
-    where: eq(users.id, id),
-  });
-  return result || null;
+  const result = await db.select().from(users).where(eq(users.id, id));
+  return result[0] || null;
 };
 
 export const gestSessions = async () => {
@@ -55,10 +52,11 @@ export const gestSessions = async () => {
   return result;
 };
 export const gestSessionById = async (sessionId: number) => {
-  const result = await db.query.sessionExam.findFirst({
-    where: eq(sessionExam.id, sessionId),
-  });
-  return result;
+  const result = await db
+    .select()
+    .from(sessionExam)
+    .where(eq(sessionExam.id, sessionId));
+  return result[0];
 };
 
 export const deleteSession = async (sessionId: number) => {
@@ -71,11 +69,15 @@ export const deleteSession = async (sessionId: number) => {
 };
 export const createSession = async (session: CreateSessionType) => {
   try {
-    const result = await db.insert(sessionExam).values(session);
-    const sessionExamId = result[0].insertId;
+    const result = await db
+      .insert(sessionExam)
+      .values(session)
+      .returning({ insertedId: sessionExam.id });
+    const sessionExamId = result[0].insertedId;
 
     const days = Math.floor(
-      (session.endDate.getTime() - session.startDate.getTime()) /
+      (new Date(session.endDate).getTime() -
+        new Date(session.startDate).getTime()) /
         (1000 * 3600 * 24)
     );
 
@@ -83,7 +85,7 @@ export const createSession = async (session: CreateSessionType) => {
 
     for (let index = 0; index <= days; index++) {
       const currentDate = new Date(
-        session.startDate.getTime() + index * 24 * 3600 * 1000
+        new Date(session.startDate).getTime() + index * 24 * 3600 * 1000
       );
       timeSlots.push(
         {
@@ -112,7 +114,15 @@ export const createSession = async (session: CreateSessionType) => {
         }
       );
     }
-    await db.insert(timeSlot).values(timeSlots);
+    await db.insert(timeSlot).values(
+      timeSlots.map((slot) => ({
+        date: slot.date.toISOString(),
+        period: slot.period,
+        timePeriod: slot.timePeriod,
+        sessionExamId: slot.sessionExamId,
+      }))
+    );
+    // await db.insert(timeSlot).values(timeSlots);
     return sessionExamId;
   } catch (error) {
     console.error("Error creating session:", error);
@@ -133,7 +143,7 @@ export const getDaysWithExams = async (
       .orderBy(timeSlot.date);
 
     const days = result.reduce((acc, row) => {
-      const dateKey = row.timeSlot.date.toISOString().split("T")[0];
+      const dateKey = row.timeSlot.date.split("T")[0];
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, timeSlots: [] };
       }
@@ -197,7 +207,7 @@ export const getDaysWithExamsForOption = async (
       .orderBy(timeSlot.date);
 
     const days = result.reduce((acc, row) => {
-      const dateKey = row.timeSlot.date.toISOString().split("T")[0];
+      const dateKey = row.timeSlot.date.split("T")[0];
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, timeSlots: [] };
       }
@@ -277,15 +287,15 @@ export const validateSession = async (sessionId: number) => {
             : 2;
         neededTeachers = freeTeachers
           .slice(0, neededTeacherNumber)
-          .map((teacher) => teacher.id);
+          .map((teacher: any) => teacher.id);
 
         const availableTeachers = freeTeachers.filter(
-          (teacher) => !assignedTeachers.includes(teacher.id)
+          (teacher: any) => !assignedTeachers.includes(teacher.id)
         );
 
         neededTeachers = availableTeachers
           .slice(0, neededTeacherNumber)
-          .map((teacher) => teacher.id);
+          .map((teacher: any) => teacher.id);
 
         assignedTeachers.push(...neededTeachers);
       }
@@ -425,13 +435,21 @@ interface Statistics {
 
 export const getStatisticsOfLastSession = async (): Promise<Statistics> => {
   try {
-    const lastSession = await db.query.sessionExam.findFirst({
-      orderBy: [desc(sessionExam.id)],
-    });
+    // const lastSession = await db.query.sessionExam.findFirst({
+    //   orderBy: [desc(sessionExam.id)],
+    // });
 
-    if (!lastSession) {
-      throw new Error("No sessions found.");
-    }
+    const session = await db
+      .select()
+      .from(sessionExam)
+      .orderBy(desc(sessionExam.id))
+      .limit(1);
+
+    const lastSession = session[0];
+
+    // if (!lastSession) {
+    //   throw new Error("No sessions found.");
+    // }
 
     const totalMonitoring = await db
       .select({

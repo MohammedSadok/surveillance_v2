@@ -1,5 +1,6 @@
 "use server";
-import { db } from "@/lib/config";
+
+import db from "@/lib/config";
 import {
   exam,
   locationTable,
@@ -34,10 +35,11 @@ export const getLocations = async () => {
 
 export const getLocationById = async (id: number) => {
   try {
-    const result = await db.query.locationTable.findFirst({
-      where: eq(locationTable.id, id),
-    });
-    return result;
+    const result = await db
+      .select()
+      .from(locationTable)
+      .where(eq(locationTable.id, id));
+    return result[0];
   } catch (error) {
     console.error("Error fetching location by ID:", error);
     throw error;

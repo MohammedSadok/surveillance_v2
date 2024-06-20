@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/lib/config";
+import db from "@/lib/config";
 import {
   exam,
   locationTable,
@@ -39,10 +39,12 @@ export const getMonitoringById = async (
   id: number
 ): Promise<Monitoring | null> => {
   try {
-    const result = await db.query.monitoring.findFirst({
-      where: eq(monitoring.id, id),
-    });
-    return result || null;
+    const result = await db
+      .select()
+      .from(monitoring)
+      .where(eq(monitoring.id, id));
+
+    return result[0] || null;
   } catch (error) {
     console.error("Error fetching monitoring:", error);
     throw error;
@@ -131,7 +133,7 @@ export const getDaysWithMonitoringDep = async (
       .orderBy(teacher.lastName, teacher.firstName);
 
     const days = result.reduce((acc, row) => {
-      const dateKey = row.timeSlot.date.toISOString().split("T")[0];
+      const dateKey = row.timeSlot.date.split("T")[0];
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, timeSlots: [] };
       }
@@ -259,10 +261,15 @@ export const getMonitoringIdsInSession = async (sessionId: number) => {
       };
     } = {};
 
-    monitoringInSessionWithLocation.forEach((item) => {
+    monitoringInSessionWithLocation.forEach((item: any) => {
       const { timeSlotId, date, period, ...rest } = item;
       if (!grouped[timeSlotId]) {
-        grouped[timeSlotId] = { timeSlotId, date, period, locations: [] };
+        grouped[timeSlotId] = {
+          timeSlotId,
+          date: date.toString(),
+          period,
+          locations: [],
+        };
       }
 
       // Ensure locationName and locationType are non-null strings

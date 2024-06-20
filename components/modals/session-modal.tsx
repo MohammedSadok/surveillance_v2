@@ -63,8 +63,8 @@ const SessionModal = () => {
     try {
       const start = format(values.dateRange.from, "yyyy-MM-dd");
       const end = format(values.dateRange.to, "yyyy-MM-dd");
-      const startDate = new Date(start);
-      const endDate = new Date(end);
+      const startDate = start;
+      const endDate = end;
       const data = {
         startDate,
         endDate,

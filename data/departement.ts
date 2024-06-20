@@ -1,5 +1,6 @@
 "use server";
-import { db } from "@/lib/config";
+
+import db from "@/lib/config";
 import { department, Department } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
@@ -26,10 +27,11 @@ export const getDepartmentById = async (
   id: number
 ): Promise<Department | null> => {
   try {
-    const result = await db.query.department.findFirst({
-      where: eq(department.id, id),
-    });
-    return result || null;
+    const result = await db
+      .select()
+      .from(department)
+      .where(eq(department.id, id));
+    return result[0] || null;
   } catch (error) {
     console.error("Error fetching department by ID:", error);
     throw error;

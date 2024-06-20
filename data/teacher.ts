@@ -1,5 +1,5 @@
 "use server";
-import { db } from "@/lib/config";
+import db from "@/lib/config";
 import {
   exam,
   monitoring,
@@ -53,10 +53,8 @@ export const getTeachersInDepartment = async (
 
 export const getTeacherById = async (id: number): Promise<Teacher | null> => {
   try {
-    const result = await db.query.teacher.findFirst({
-      where: eq(teacher.id, id),
-    });
-    return result || null;
+    const result = await db.select().from(teacher).where(eq(teacher.id, id));
+    return result[0] || null;
   } catch (error) {
     console.error("Error fetching teacher by ID:", error);
     throw error;

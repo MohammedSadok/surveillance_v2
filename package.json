@@ -11,6 +11,7 @@
   "dependencies": {
     "@auth/drizzle-adapter": "^1.2.0",
     "@hookform/resolvers": "^3.6.0",
+    "@neondatabase/serverless": "^0.9.3",
     "@nextui-org/date-input": "^2.1.0",
     "@nextui-org/react": "^2.4.1",
     "@radix-ui/react-avatar": "^1.0.4",
@@ -32,6 +33,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.31.2",
     "lucide-react": "^0.390.0",
     "mysql2": "^3.10.0",

@@ -1,5 +1,6 @@
 "use server";
-import { db } from "@/lib/config";
+
+import db from "@/lib/config";
 import {
   exam,
   locationTable,
@@ -35,10 +36,8 @@ export const getOptions = async (): Promise<Option[]> => {
 };
 
 export const getOptionById = async (id: string) => {
-  const result = await db.query.option.findFirst({
-    where: eq(option.id, id),
-  });
-  return result || null;
+  const result = await db.select().from(option).where(eq(option.id, id));
+  return result[0] || null;
 };
 export const updateOption = async (updateOption: Option) => {
   try {

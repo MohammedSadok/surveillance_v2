@@ -1,5 +1,6 @@
 "use server";
-import { db } from "@/lib/config";
+
+import db from "@/lib/config";
 import {
   Exam,
   exam,
@@ -31,7 +32,9 @@ export const createExam = async (newExam: ExamType) => {
     );
     const selectedTimeSlot = await getTimeSlotById(newExam.timeSlotId);
     if (selectedTimeSlot) {
-      const createdExam = await db.insert(exam).values(newExam);
+      const createdExam = await db.insert(exam).values(newExam).returning({
+        insertedId: exam.id,
+      });
       await createOccupiedTeacherInPeriod({
         teacherId: newExam.responsibleId,
         cause: "TT",
@@ -60,7 +63,7 @@ export const createExam = async (newExam: ExamType) => {
           studentExamLocationsTable.push({
             numberOfStudent: i + 1,
             cne: students[studentIndex].cne,
-            examId: createdExam[0].insertId,
+            examId: createdExam[0].insertedId,
             locationId: location.id,
           });
           studentIndex++;
@@ -68,7 +71,7 @@ export const createExam = async (newExam: ExamType) => {
       }
 
       await db.insert(studentExamLocation).values(studentExamLocationsTable);
-      await reserveLocationsForModule(locations, createdExam[0].insertId);
+      await reserveLocationsForModule(locations, createdExam[0].insertedId);
     }
   } catch (error) {
     console.error("Error creating exam:", error);
@@ -96,8 +99,8 @@ export const getExams = async (sessionExamId: number): Promise<Exam[]> => {
 
 export const getExam = async (id: number): Promise<Exam | null> => {
   try {
-    const result = await db.query.exam.findFirst({ where: eq(exam.id, id) });
-    return result || null;
+    const result = await db.select().from(exam).where(eq(exam.id, id));
+    return result[0] || null;
   } catch (error) {
     console.error("Error fetching exam:", error);
     throw error;

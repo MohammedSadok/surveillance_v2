@@ -1,6 +1,6 @@
 {
-  "id": "4cce4f51-6cfb-4390-bccb-ffc2c436ba67",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "386461a8-8225-4642-9195-289071efae90",
+  "prevId": "43be8db4-563b-4707-8296-30ffcc9e896c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -122,8 +122,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "RoomType": {
-          "name": "RoomType",
+        "type": {
+          "name": "type",
           "type": "RoomType",
           "typeSchema": "public",
           "primaryKey": false,
@@ -202,7 +202,7 @@
         },
         "name": {
           "name": "name",
-          "type": "varchar(50)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true
         }

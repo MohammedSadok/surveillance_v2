@@ -1,5 +1,5 @@
 "use server";
-import { db } from "@/lib/config";
+
 import {
   exam,
   moduleOption,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/schema";
 import { and, eq, notInArray, sql } from "drizzle-orm";
 import { getTimeSlotById } from "./timeSlot";
+import db from "@/lib/config";
 /**
  *
  * @returns Promise<ModuleType[]>
