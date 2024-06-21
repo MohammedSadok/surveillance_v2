@@ -33,17 +33,20 @@ const PrintStudents = ({
               <Table className="student-table">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="border text-center p-0">
+                    <TableHead className="border text-center p-0 w-5">
+                      {"Numéro"}
+                    </TableHead>
+                    <TableHead className="border text-center p-0  w-24">
                       {"Numéro d'étudiant"}
                     </TableHead>
-                    <TableHead className="border text-center p-0">
-                      {"Numéro d'éxam"}
-                    </TableHead>
-                    <TableHead className="border text-center p-0">
+                    <TableHead className="border text-center p-0 w-44">
                       {"Nom et prénom"}
                     </TableHead>
                     <TableHead className="border text-center p-0">
                       {"Signature"}
+                    </TableHead>
+                    <TableHead className="border text-center p-0">
+                      {"Observation"}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -51,14 +54,15 @@ const PrintStudents = ({
                   {studentGroup.map((student, studentIndex) => (
                     <TableRow key={studentIndex}>
                       <TableCell className="border text-center text-xs p-0.5">
-                        {student.cne}
+                        {student.numberOfStudent}
                       </TableCell>
                       <TableCell className="border text-center text-xs p-0.5">
-                        {student.numberOfStudent}
+                        {student.cne}
                       </TableCell>
                       <TableCell className="border text-center text-xs p-0.5">
                         {student.firstName} {student.lastName}
                       </TableCell>
+                      <TableCell className="border text-center text-xs p-0.5"></TableCell>
                       <TableCell className="border text-center text-xs p-0.5"></TableCell>
                     </TableRow>
                   ))}

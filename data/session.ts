@@ -260,12 +260,16 @@ export const validateSession = async (sessionId: number) => {
   const timeSlots = await getMonitoringIdsInSession(sessionId);
   let monitoringLines: Omit<MonitoringLine, "id">[] = [];
   let assignedTeachers: number[] = [];
+
+  // First phase: Collect all necessary data
   for (const timeSlot of timeSlots) {
     const { locationTeacherMap, freeTeachers } =
       await getFreeTeachersForMonitoring(timeSlot.timeSlotId);
+
     for (const location of timeSlot.locations) {
       let neededTeachers: number[] = [];
       const teacherForLocation = locationTeacherMap.get(location.locationId);
+
       if (teacherForLocation !== undefined) {
         neededTeachers = teacherForLocation;
       } else {
@@ -275,9 +279,6 @@ export const validateSession = async (sessionId: number) => {
               ? 4
               : 3
             : 2;
-        neededTeachers = freeTeachers
-          .slice(0, neededTeacherNumber)
-          .map((teacher) => teacher.id);
 
         const availableTeachers = freeTeachers.filter(
           (teacher) => !assignedTeachers.includes(teacher.id)
@@ -296,11 +297,12 @@ export const validateSession = async (sessionId: number) => {
           teacherId,
         });
       }
+      await insertMonitoringLines(monitoringLines);
     }
-    await insertMonitoringLines(monitoringLines);
-    const timeSlotIds = await groupByDateAndPeriod(timeSlots);
-    await assignReservistTeachers(timeSlotIds);
   }
+  const timeSlotIds = await groupByDateAndPeriod(timeSlots);
+  await assignReservistTeachers(timeSlotIds);
+
   await db
     .update(sessionExam)
     .set({ isValidated: true })

@@ -10,14 +10,14 @@ import {
   teacher,
   timeSlot,
 } from "@/lib/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   getFreeLocationsForModule,
   reserveLocationsForModule,
 } from "./location";
 import { getStudentsInModule } from "./modules";
 import { createOccupiedTeacherInPeriod } from "./teacher";
-import { getTimeSlotById } from "./timeSlot";
+import { getTimeSlotById, getTimeSlotsInSameDayAndPeriod } from "./timeSlot";
 
 export type ExamType = {
   locations: number[];
@@ -120,19 +120,27 @@ export const getExamsByTimeSlot = async (
 
 export const deleteExam = async (id: number) => {
   try {
-    const deleteExam = await getExam(id);
-    if (deleteExam)
-      await db.transaction(async (tx) => {
-        await tx
-          .delete(occupiedTeacher)
-          .where(
-            and(
-              eq(occupiedTeacher.timeSlotId, deleteExam.timeSlotId),
-              eq(occupiedTeacher.cause, "TT")
-            )
-          );
-        await tx.delete(exam).where(eq(exam.id, id));
-      });
+    const deleteExam = await getExam(id); // Assuming this is a function to get an exam by id
+    if (!deleteExam) throw new Error("Exam not found");
+
+    const timeSlots = await getTimeSlotsInSameDayAndPeriod(
+      deleteExam.timeSlotId
+    ); // Get the time slots in the same day and period
+    const timeSlotIds = timeSlots.map((timeSlot) => timeSlot.id);
+
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(occupiedTeacher)
+        .where(
+          and(
+            inArray(occupiedTeacher.timeSlotId, timeSlotIds),
+            eq(occupiedTeacher.cause, "TT"),
+            eq(occupiedTeacher.teacherId, deleteExam.responsibleId)
+          )
+        );
+
+      await tx.delete(exam).where(eq(exam.id, id));
+    });
   } catch (error) {
     console.error("Error deleting exam:", error);
     throw error;

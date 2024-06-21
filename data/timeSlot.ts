@@ -16,7 +16,9 @@ export const getTimeSlotById = async (id: number): Promise<TimeSlot | null> => {
   }
 };
 
-export const getTimeSlotsInSameDayAndPeriod = async (timeSlotId: number) => {
+export const getTimeSlotsInSameDayAndPeriod = async (
+  timeSlotId: number
+): Promise<TimeSlot[]> => {
   try {
     const selectedTimeSlot = await getTimeSlotById(timeSlotId);
     if (selectedTimeSlot) {
@@ -42,6 +44,7 @@ export const getTimeSlotsInSameDayAndPeriod = async (timeSlotId: number) => {
       );
       return timeSlotInSamePeriod;
     }
+    return []; // Add this line to return an empty array when selectedTimeSlot is falsy
   } catch (error) {
     console.error("Error fetching time slots:", error);
     throw error;
