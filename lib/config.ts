@@ -14,12 +14,7 @@ function singleton<Value>(name: string, value: () => Value): Value {
 }
 
 function createDatabaseConnection() {
-  const poolConnection = mysql.createPool({
-    host: "localhost",
-    user: "root",
-    port: 3306,
-    database: "app",
-  });
+  const poolConnection = mysql.createPool({});
 
   return drizzle(poolConnection, {
     schema,

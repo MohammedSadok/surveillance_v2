@@ -2,63 +2,63 @@ CREATE TABLE `department` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(100) NOT NULL,
 	CONSTRAINT `department_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `exam` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`module` varchar(20) NOT NULL,
 	`timeSlotId` int NOT NULL,
 	`responsibleId` int NOT NULL,
 	CONSTRAINT `exam_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `location` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(100) NOT NULL,
 	`size` int NOT NULL,
 	`type` enum('CLASSROOM', 'AMPHITHEATER') NOT NULL,
 	CONSTRAINT `location_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `moduleOption` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`moduleId` varchar(20) NOT NULL,
 	`optionId` varchar(20) NOT NULL,
 	CONSTRAINT `moduleOption_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `module` (
 	`id` varchar(20) NOT NULL,
 	`name` varchar(50) NOT NULL,
 	CONSTRAINT `module_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `monitoring` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`examId` int NOT NULL,
 	`locationId` int NOT NULL,
 	CONSTRAINT `monitoring_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `monitoringLine` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`teacherId` int NOT NULL,
 	`monitoringId` int NOT NULL,
 	CONSTRAINT `monitoringLine_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `occupiedLocation` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`cause` varchar(50) NOT NULL,
 	`locationId` int NOT NULL,
 	`timeSlotId` int NOT NULL,
 	CONSTRAINT `occupiedLocation_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `occupiedTeacher` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`cause` varchar(50) NOT NULL,
 	`teacherId` int NOT NULL,
 	`timeSlotId` int NOT NULL,
 	CONSTRAINT `occupiedTeacher_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `option` (
 	`id` varchar(20) NOT NULL,
 	`name` varchar(50) NOT NULL,
 	CONSTRAINT `option_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `sessionExam` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`isValidated` boolean NOT NULL DEFAULT false,
@@ -66,7 +66,7 @@ CREATE TABLE `sessionExam` (
 	`startDate` date NOT NULL,
 	`endDate` date NOT NULL,
 	CONSTRAINT `sessionExam_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `student` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`cne` varchar(20) NOT NULL,
@@ -74,8 +74,9 @@ CREATE TABLE `student` (
 	`lastName` varchar(50) NOT NULL,
 	`sessionExamId` int NOT NULL,
 	`moduleId` varchar(20) NOT NULL,
+	`optionId` varchar(20) NOT NULL,
 	CONSTRAINT `student_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `studentExamLocation` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`cne` varchar(20) NOT NULL,
@@ -83,7 +84,7 @@ CREATE TABLE `studentExamLocation` (
 	`locationId` int NOT NULL,
 	`examId` int NOT NULL,
 	CONSTRAINT `studentExamLocation_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `teacher` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`lastName` varchar(50) NOT NULL,
@@ -93,7 +94,7 @@ CREATE TABLE `teacher` (
 	`isDispense` boolean NOT NULL DEFAULT false,
 	`departmentId` int NOT NULL,
 	CONSTRAINT `teacher_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `timeSlot` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`date` date NOT NULL,
@@ -101,7 +102,7 @@ CREATE TABLE `timeSlot` (
 	`timePeriod` varchar(20) NOT NULL,
 	`sessionExamId` int NOT NULL,
 	CONSTRAINT `timeSlot_id` PRIMARY KEY(`id`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 CREATE TABLE `user` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(100) NOT NULL,
@@ -110,7 +111,7 @@ CREATE TABLE `user` (
 	`isAdmin` boolean NOT NULL DEFAULT false,
 	CONSTRAINT `user_id` PRIMARY KEY(`id`),
 	CONSTRAINT `user_email_unique` UNIQUE(`email`)
-) ENGINE = InnoDB;
+) Engine = InnoDB;
 ALTER TABLE `exam`
 ADD CONSTRAINT `exam_module_module_id_fk` FOREIGN KEY (`module`) REFERENCES `module`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `exam`
@@ -141,6 +142,8 @@ ALTER TABLE `student`
 ADD CONSTRAINT `student_sessionExamId_sessionExam_id_fk` FOREIGN KEY (`sessionExamId`) REFERENCES `sessionExam`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `student`
 ADD CONSTRAINT `student_moduleId_module_id_fk` FOREIGN KEY (`moduleId`) REFERENCES `module`(`id`) ON DELETE cascade ON UPDATE cascade;
+ALTER TABLE `student`
+ADD CONSTRAINT `student_optionId_option_id_fk` FOREIGN KEY (`optionId`) REFERENCES `option`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `studentExamLocation`
 ADD CONSTRAINT `studentExamLocation_locationId_location_id_fk` FOREIGN KEY (`locationId`) REFERENCES `location`(`id`) ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE `studentExamLocation`

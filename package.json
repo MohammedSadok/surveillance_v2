@@ -33,6 +33,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.31.2",
     "lucide-react": "^0.390.0",
     "mysql2": "^3.10.0",

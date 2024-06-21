@@ -5,7 +5,7 @@ export default defineConfig({
   out: "./lib/drizzle",
   dialect: "mysql",
   dbCredentials: {
-    url: "mysql://root:@localhost:3306/app",
+    url: process.env.DATABASE_URL!,
   },
   // verbose: true,
   strict: true,

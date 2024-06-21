@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "e9cac420-e6fa-4619-8e86-5f7e71afaa3f",
+  "id": "085a903f-dee4-4652-8ef4-b995ec358751",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "department": {
@@ -652,6 +652,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "optionId": {
+          "name": "optionId",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -675,6 +682,19 @@
           "tableTo": "module",
           "columnsFrom": [
             "moduleId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "student_optionId_option_id_fk": {
+          "name": "student_optionId_option_id_fk",
+          "tableFrom": "student",
+          "tableTo": "option",
+          "columnsFrom": [
+            "optionId"
           ],
           "columnsTo": [
             "id"
