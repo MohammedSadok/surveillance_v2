@@ -8,8 +8,11 @@ import {
 } from "@/components/ui/table";
 
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useEffect } from "react";
 
+import { getMonitoringInDate } from "@/data/monitoring";
+import { getDaysWithTimeSlots } from "@/data/timeSlot";
+import { MonitoringLine } from "@/lib/schema";
 import { DayWithTimeSlots } from "@/lib/utils";
 
 interface ScheduleProps {
@@ -18,6 +21,23 @@ interface ScheduleProps {
 }
 
 const Schedule: React.FC<ScheduleProps> = ({ sessionDays, sessionId }) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        let monitoringLines: Omit<MonitoringLine, "id">[] = [];
+        const daysWithTimeSlots = await getDaysWithTimeSlots(
+          parseInt(sessionId)
+        );
+        const { monitoringInAfternoon } = await getMonitoringInDate(
+          daysWithTimeSlots[0]
+        );
+        console.log(monitoringInAfternoon);
+      } catch (error) {}
+    };
+
+    fetchData();
+  }, [sessionId]);
+
   const router = useRouter();
   return (
     <Table className="border rounded-lg mt-2">

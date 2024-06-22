@@ -6,7 +6,6 @@ interface ExamsPageProps {
 }
 const ExamsPage = async ({ params }: ExamsPageProps) => {
   const days = await getDaysWithExams(parseInt(params.sessionId));
-
   return <Schedule sessionDays={days} sessionId={params.sessionId} />;
 };
 

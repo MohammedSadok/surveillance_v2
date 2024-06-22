@@ -1,3 +1,4 @@
+"use server";
 import { db } from "@/lib/config";
 import { TimeSlot, timeSlot } from "@/lib/schema";
 import { format } from "date-fns";
@@ -93,3 +94,34 @@ export const getTimeSlotsInSameDay = async (timeSlotId: number) => {
   }
   return [];
 };
+export const getDaysWithTimeSlots = async (
+  sessionId: number
+): Promise<DayWithTimeSlotIds[]> => {
+  try {
+    const result = await db
+      .select()
+      .from(timeSlot)
+      .where(eq(timeSlot.sessionExamId, sessionId));
+
+    const days = result.reduce((acc, row) => {
+      const dateKey = row.date.toISOString().split("T")[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = { date: dateKey, timeSlotIds: [] };
+      }
+
+      const currentSlots = acc[dateKey].timeSlotIds;
+      currentSlots.push(row.id);
+      return acc;
+    }, {} as Record<string, DayWithTimeSlotIds>);
+
+    return Object.values(days);
+  } catch (error) {
+    console.error("Error fetching days with time slots:", error);
+    throw error;
+  }
+};
+
+export interface DayWithTimeSlotIds {
+  date: string;
+  timeSlotIds: number[];
+}

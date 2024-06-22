@@ -12,8 +12,9 @@ import {
   teacher,
   timeSlot,
 } from "@/lib/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { getLocations } from "./location";
+import { DayWithTimeSlotIds } from "./timeSlot";
 export const createMonitoring = async (
   newMonitoring: Omit<Monitoring, "id">
 ) => {
@@ -95,63 +96,67 @@ export const getDaysWithMonitoringDep = async (
   departmentId: number
 ): Promise<DayWithTimeSlotsAndMonitoring[]> => {
   try {
-    // Fetching the teachers who are monitoring
-    const monitoringTeachers = await db
-      .select({
-        timeSlotId: timeSlot.id,
-        teacherId: monitoringLine.teacherId,
-        locationName: locationTable.name,
-      })
-      .from(timeSlot)
-      .innerJoin(exam, eq(exam.timeSlotId, timeSlot.id))
-      .innerJoin(monitoring, eq(monitoring.examId, exam.id))
-      .innerJoin(monitoringLine, eq(monitoringLine.monitoringId, monitoring.id))
-      .innerJoin(locationTable, eq(locationTable.id, monitoring.locationId))
-      .where(eq(timeSlot.sessionExamId, sessionId));
-
-    // Fetching the main result set
-    const result = await db
-      .select()
-      .from(timeSlot)
-      .innerJoin(occupiedTeacher, eq(occupiedTeacher.timeSlotId, timeSlot.id))
-      .where(and(eq(timeSlot.sessionExamId, sessionId)))
-      .orderBy(timeSlot.date, desc(timeSlot.period));
-
-    // Fetching all teachers
     const allTeachers = await db
       .select()
       .from(teacher)
       .where(eq(teacher.departmentId, departmentId))
       .orderBy(teacher.lastName, teacher.firstName);
 
+    const teachersIds = allTeachers.map((teacher) => teacher.id);
+
+    const timeSlots = db
+      .select()
+      .from(timeSlot)
+      .where(and(eq(timeSlot.sessionExamId, sessionId)))
+      .as("timeSlots");
+    // Fetching the teachers who are monitoring
+    const monitoringTeachers = await db
+      .select({
+        timeSlotId: timeSlots.id,
+        teacherId: monitoringLine.teacherId,
+        locationName: locationTable.name,
+      })
+      .from(exam)
+      .innerJoin(timeSlots, eq(exam.timeSlotId, timeSlots.id))
+      .innerJoin(monitoring, eq(monitoring.examId, exam.id))
+      .innerJoin(monitoringLine, eq(monitoringLine.monitoringId, monitoring.id))
+      .innerJoin(locationTable, eq(locationTable.id, monitoring.locationId))
+      .where(inArray(monitoringLine.teacherId, teachersIds));
+    // Fetching the main result set
+    const result = await db
+      .select()
+      .from(occupiedTeacher)
+      .innerJoin(timeSlots, eq(occupiedTeacher.timeSlotId, timeSlots.id))
+      .orderBy(timeSlots.date, desc(timeSlots.period));
+
     const days = result.reduce((acc, row) => {
-      const dateKey = row.timeSlot.date.toISOString().split("T")[0];
+      const dateKey = row.timeSlots.date.toISOString().split("T")[0];
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, timeSlots: [] };
       }
 
       const timeSlotIndex = acc[dateKey].timeSlots.findIndex(
-        (slot) => slot.id === row.timeSlot.id
+        (slot) => slot.id === row.timeSlots.id
       );
 
       if (timeSlotIndex === -1) {
         acc[dateKey].timeSlots.push({
-          id: row.timeSlot.id,
-          period: row.timeSlot.period,
-          timePeriod: row.timeSlot.timePeriod,
+          id: row.timeSlots.id,
+          period: row.timeSlots.period,
+          timePeriod: row.timeSlots.timePeriod,
           monitoring: [],
         });
       }
 
       const currentTimeSlot = acc[dateKey].timeSlots.find(
-        (slot) => slot.id === row.timeSlot.id
+        (slot) => slot.id === row.timeSlots.id
       );
 
       if (currentTimeSlot) {
         allTeachers.forEach((teacher) => {
           const occupied = result.find(
             (r) =>
-              r.timeSlot.id === currentTimeSlot.id &&
+              r.timeSlots.id === currentTimeSlot.id &&
               r.occupiedTeacher?.teacherId === teacher.id
           );
 
@@ -325,3 +330,94 @@ interface MonitoringData {
   locationName: string;
   locationType: string;
 }
+
+interface MonitoringSession {
+  idMonitoring: number;
+  timeSlotId: number;
+}
+
+export interface LocationMonitoring {
+  locationId: number;
+  locationName: string;
+  locationType: string;
+  monitoringSessions: MonitoringSession[];
+}
+
+interface MonitoringDataAndLocation {
+  monitoringInMorning: LocationMonitoring[];
+  monitoringInAfternoon: LocationMonitoring[];
+}
+
+export const getMonitoringInDate = async (
+  day: DayWithTimeSlotIds
+): Promise<MonitoringDataAndLocation> => {
+  try {
+    const examsInMorning = db
+      .select()
+      .from(exam)
+      .where(inArray(exam.timeSlotId, day.timeSlotIds.slice(0, 2)))
+      .as("examsInMorning");
+
+    const examsInAfternoon = db
+      .select()
+      .from(exam)
+      .where(inArray(exam.timeSlotId, day.timeSlotIds.slice(2, 4)))
+      .as("examsInAfternoon");
+
+    const monitoringInMorning = await db
+      .select({
+        idMonitoring: monitoring.id,
+        timeSlotId: examsInMorning.timeSlotId,
+        locationId: monitoring.locationId,
+        locationName: locationTable.name,
+        locationType: locationTable.type,
+      })
+      .from(monitoring)
+      .innerJoin(examsInMorning, eq(examsInMorning.id, monitoring.examId))
+      .innerJoin(locationTable, eq(monitoring.locationId, locationTable.id));
+
+    const monitoringInAfternoon = await db
+      .select({
+        idMonitoring: monitoring.id,
+        timeSlotId: examsInAfternoon.timeSlotId,
+        locationId: monitoring.locationId,
+        locationName: locationTable.name,
+        locationType: locationTable.type,
+      })
+      .from(monitoring)
+      .innerJoin(examsInAfternoon, eq(examsInAfternoon.id, monitoring.examId))
+      .innerJoin(locationTable, eq(monitoring.locationId, locationTable.id));
+
+    const groupByLocation = (
+      monitoringData: any[]
+    ): Record<string, LocationMonitoring> => {
+      return monitoringData.reduce((acc, row) => {
+        const key = `${row.locationId}_${row.locationName}_${row.locationType}`;
+        if (!acc[key]) {
+          acc[key] = {
+            locationId: row.locationId,
+            locationName: row.locationName,
+            locationType: row.locationType,
+            monitoringSessions: [],
+          };
+        }
+        acc[key].monitoringSessions.push({
+          idMonitoring: row.idMonitoring,
+          timeSlotId: row.timeSlotId,
+        });
+        return acc;
+      }, {} as Record<string, LocationMonitoring>);
+    };
+
+    const groupedMonitoringInMorning = groupByLocation(monitoringInMorning);
+    const groupedMonitoringInAfternoon = groupByLocation(monitoringInAfternoon);
+
+    return {
+      monitoringInMorning: Object.values(groupedMonitoringInMorning),
+      monitoringInAfternoon: Object.values(groupedMonitoringInAfternoon),
+    };
+  } catch (error) {
+    console.error("Error fetching monitoring in date:", error);
+    throw error;
+  }
+};

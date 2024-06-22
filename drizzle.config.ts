@@ -5,7 +5,11 @@ export default defineConfig({
   out: "./lib/drizzle",
   dialect: "mysql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    host: process.env.DATABASE_HOST!,
+    user: process.env.DATABASE_USER!,
+    port: parseInt(process.env.DATABASE_PORT!),
+    database: process.env.DATABASE_NAME!,
+    password: process.env.DATABASE_PASSWORD!,
   },
   // verbose: true,
   strict: true,

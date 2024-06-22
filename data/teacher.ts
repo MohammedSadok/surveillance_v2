@@ -12,8 +12,8 @@ import {
 } from "@/lib/schema";
 import { and, count, eq, inArray, notInArray } from "drizzle-orm";
 import {
+  DayWithTimeSlotIds,
   getTimeSlotById,
-  getTimeSlotsInSameDay,
   getTimeSlotsInSameDayAndPeriod,
 } from "./timeSlot";
 
@@ -251,30 +251,22 @@ export const getFreeTeachersForMonitoring = async (timeSlotId: number) => {
         monitoringCount: count(monitoringLine.monitoringId).as(
           "monitoringCount"
         ),
-      })
-      .from(monitoringLine)
-      .groupBy(monitoringLine.teacherId);
-
-    // Count the number of occupied times each teacher has, filtering by cause "TT" or "RR"
-    const occupiedCounts = await db
-      .select({
-        teacherId: occupiedTeacher.teacherId,
         occupiedCount: count(occupiedTeacher.id).as("occupiedCount"),
       })
-      .from(occupiedTeacher)
-      .where(inArray(occupiedTeacher.cause, ["TT", "RR"]))
-      .groupBy(occupiedTeacher.teacherId);
+      .from(monitoringLine)
+      .innerJoin(
+        occupiedTeacher,
+        eq(monitoringLine.teacherId, occupiedTeacher.id)
+      )
+      .groupBy(monitoringLine.teacherId);
 
     // Merge the monitoringCounts and occupiedCounts
     const monitoringCountMap = new Map<number, number>();
-    monitoringCounts.forEach(({ teacherId, monitoringCount }) => {
-      monitoringCountMap.set(teacherId, monitoringCount);
-    });
-
-    occupiedCounts.forEach(({ teacherId, occupiedCount }) => {
-      const currentCount = monitoringCountMap.get(teacherId) || 0;
-      monitoringCountMap.set(teacherId, currentCount + occupiedCount);
-    });
+    monitoringCounts.forEach(
+      ({ teacherId, monitoringCount, occupiedCount }) => {
+        monitoringCountMap.set(teacherId, monitoringCount + occupiedCount);
+      }
+    );
 
     // Sort free teachers by their total counts (monitoring + occupied)
     freeTeachers = freeTeachers.sort((a, b) => {
@@ -287,6 +279,7 @@ export const getFreeTeachersForMonitoring = async (timeSlotId: number) => {
     const OtherTimeSlotId = timeSlots?.filter(
       (timeSlot) => timeSlot.id !== timeSlotId
     );
+
     let locationTeacherMap = new Map<number, number[]>();
     if (OtherTimeSlotId) {
       const teachersInSamePeriod = await db
@@ -361,79 +354,157 @@ export const getTeachersInTheSamePeriod = async (
   }
 };
 
-export const getAvailableTeacherIdsForReservists = async (
-  timeSlotId: number
-): Promise<number[]> => {
+export const getFreeTeachersInSameDayAndCountMonitoring = async (
+  day: DayWithTimeSlotIds
+) => {
   try {
-    // Fetch all time slots in the same day
-    const timeSlotsInSameDay = await getTimeSlotsInSameDay(timeSlotId);
-
-    if (!timeSlotsInSameDay || timeSlotsInSameDay.length === 0) {
-      return [];
-    }
-
-    const timeSlotIds = timeSlotsInSameDay.map((slot) => slot.id);
-
     // Fetch occupied teachers for the given time slots
-    const occupiedTeachers = await db
+    const occupiedTeachersPromise = db
       .select({ teacherId: occupiedTeacher.teacherId })
       .from(occupiedTeacher)
-      .where(inArray(occupiedTeacher.timeSlotId, timeSlotIds));
+      .where(inArray(occupiedTeacher.timeSlotId, day.timeSlotIds));
+
+    // Fetch teachers who are monitoring exams in the given time slots
+    const monitoringTeachersPromise = db
+      .select({ teacherId: monitoringLine.teacherId })
+      .from(monitoringLine)
+      .innerJoin(monitoring, eq(monitoringLine.monitoringId, monitoring.id))
+      .innerJoin(exam, eq(monitoring.examId, exam.id))
+      .where(inArray(exam.timeSlotId, day.timeSlotIds));
+
+    const [occupiedTeachers, monitoringTeachers] = await Promise.all([
+      occupiedTeachersPromise,
+      monitoringTeachersPromise,
+    ]);
 
     const occupiedTeacherIds = occupiedTeachers.map(
       (occupiedTeacher) => occupiedTeacher.teacherId
     );
 
-    // Fetch teachers already monitoring exams in the given time slots
-    const monitoringTeachers = await db
-      .select({ teacherId: monitoringLine.teacherId })
-      .from(monitoringLine)
-      .innerJoin(monitoring, eq(monitoringLine.monitoringId, monitoring.id))
-      .innerJoin(exam, eq(monitoring.examId, exam.id))
-      .where(inArray(exam.timeSlotId, timeSlotIds));
-
     const monitoringTeacherIds = monitoringTeachers.map(
       (monitoringTeacher) => monitoringTeacher.teacherId
     );
 
-    // Combine the occupied and monitoring teacher IDs to get the unavailable teachers
+    // Combine occupied and monitoring teacher IDs to get unavailable teachers
     const unavailableTeacherIds = [
       ...new Set([...occupiedTeacherIds, ...monitoringTeacherIds]),
     ];
 
     // Fetch all teachers who are not unavailable (i.e., who are free)
-    let freeTeachers = await db
+    const freeTeachersPromise = db
       .select()
       .from(teacher)
-      .where(notInArray(teacher.id, unavailableTeacherIds));
+      .where(
+        and(
+          notInArray(teacher.id, unavailableTeacherIds),
+          eq(teacher.isDispense, false)
+        )
+      );
 
-    // Count the number of times each teacher has been a reservist
-    const reservistCounts = await db
+    const occupationCountsReservistPromise = db
       .select({
         teacherId: occupiedTeacher.teacherId,
-        reservistCount: count(occupiedTeacher.id).as("reservistCount"),
+        count: count(occupiedTeacher.id).as("count"),
       })
       .from(occupiedTeacher)
-      .where(eq(occupiedTeacher.cause, "RR"))
+      .where(
+        and(
+          eq(occupiedTeacher.cause, "RR"),
+          notInArray(occupiedTeacher.teacherId, unavailableTeacherIds)
+        )
+      )
       .groupBy(occupiedTeacher.teacherId);
 
-    // Create a map of teacherId to reservistCount
-    const reservistCountMap = new Map(
-      reservistCounts.map(({ teacherId, reservistCount }) => [
-        teacherId,
-        reservistCount,
-      ])
+    const [freeTeachers, occupationCountsReservist] = await Promise.all([
+      freeTeachersPromise,
+      occupationCountsReservistPromise,
+    ]);
+
+    // Create a map of teacher ID to occupation count
+    const occupationCountMapReservist = occupationCountsReservist.reduce(
+      (acc, row) => {
+        acc[row.teacherId] = row.count;
+        return acc;
+      },
+      {} as Record<number, number>
     );
 
-    // Sort free teachers by their reservist counts (ascending order)
-    freeTeachers = freeTeachers.sort((a, b) => {
-      const countA = reservistCountMap.get(a.id) || 0;
-      const countB = reservistCountMap.get(b.id) || 0;
-      return countA - countB;
+    const combinedCountMapReservist = freeTeachers.map((teacher) => {
+      const reservistCount = occupationCountMapReservist[teacher.id] || 0;
+      return {
+        id: teacher.id,
+        totalCount: reservistCount,
+      };
     });
 
-    // Return the IDs of the sorted free teachers
-    return freeTeachers.map((teacher) => teacher.id);
+    const reservistTeacherIds = combinedCountMapReservist
+      .sort((a, b) => a.totalCount - b.totalCount)
+      .slice(0, 20)
+      .map((entry) => entry.id);
+
+    const monitoringCountsPromise = db
+      .select({
+        teacherId: monitoringLine.teacherId,
+        count: count(monitoringLine.id).as("count"),
+      })
+      .from(monitoringLine)
+      .where(notInArray(monitoringLine.teacherId, unavailableTeacherIds))
+      .groupBy(monitoringLine.teacherId);
+
+    const occupationCountsPromise = db
+      .select({
+        teacherId: occupiedTeacher.teacherId,
+        count: count(occupiedTeacher.id).as("count"),
+      })
+      .from(occupiedTeacher)
+      .where(
+        and(
+          eq(occupiedTeacher.cause, "TT"),
+          notInArray(occupiedTeacher.teacherId, unavailableTeacherIds)
+        )
+      )
+      .groupBy(occupiedTeacher.teacherId);
+
+    const [monitoringCounts, occupationCounts] = await Promise.all([
+      monitoringCountsPromise,
+      occupationCountsPromise,
+    ]);
+
+    // Create a map of teacher ID to monitoring count
+    const monitoringCountMap = monitoringCounts.reduce((acc, row) => {
+      acc[row.teacherId] = row.count;
+      return acc;
+    }, {} as Record<number, number>);
+
+    // Create a map of teacher ID to occupation count
+    const occupationCountMap = occupationCounts.reduce((acc, row) => {
+      acc[row.teacherId] = row.count;
+      return acc;
+    }, {} as Record<number, number>);
+
+    // Combine monitoring and occupation counts
+    const combinedCountMap = freeTeachers.map((teacher) => {
+      const monitorCount = monitoringCountMap[teacher.id] || 0;
+      const occupationCount = occupationCountMap[teacher.id] || 0;
+      return {
+        id: teacher.id,
+        totalCount: monitorCount + occupationCount,
+      };
+    });
+
+    // Sort free teachers by the total count (monitoring + occupation)
+    combinedCountMap.sort((a, b) => a.totalCount - b.totalCount);
+
+    const idsForMonitoring = combinedCountMap
+      .map((entry) => entry.id)
+      .filter((id) => !reservistTeacherIds.includes(id));
+    const idsForReservist = reservistTeacherIds;
+
+    // Return sorted teacher IDs
+    return {
+      idsForMonitoring,
+      idsForReservist,
+    };
   } catch (error) {
     console.error(
       "Error fetching available teacher IDs for reservists:",

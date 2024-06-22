@@ -10,6 +10,7 @@ import {
   monitoring,
   monitoringLine,
   MonitoringLine,
+  OccupiedTeacher,
   occupiedTeacher,
   SessionExam,
   sessionExam,
@@ -20,14 +21,12 @@ import {
 import { DayWithTimeSlots, DayWithTimeSlotsOption } from "@/lib/utils";
 import { format } from "date-fns";
 import {
-  getMonitoringIdsInSession,
-  groupByDateAndPeriod,
+  getMonitoringInDate,
   insertMonitoringLines,
+  LocationMonitoring,
 } from "./monitoring";
-import {
-  getAvailableTeacherIdsForReservists,
-  getFreeTeachersForMonitoring,
-} from "./teacher";
+import { getFreeTeachersInSameDayAndCountMonitoring } from "./teacher";
+import { DayWithTimeSlotIds, getDaysWithTimeSlots } from "./timeSlot";
 
 export const LoginUser = async (email: string, password: string) => {
   const result = await db.query.users.findFirst({
@@ -257,52 +256,42 @@ export type CreateSessionType = {
 } & Pick<SessionExam, "startDate" | "endDate" | "type">;
 
 export const validateSession = async (sessionId: number) => {
-  const timeSlots = await getMonitoringIdsInSession(sessionId);
-  let monitoringLines: Omit<MonitoringLine, "id">[] = [];
-  let assignedTeachers: number[] = [];
+  const daysWithTimeSlots = await getDaysWithTimeSlots(sessionId);
 
-  // First phase: Collect all necessary data
-  for (const timeSlot of timeSlots) {
-    const { locationTeacherMap, freeTeachers } =
-      await getFreeTeachersForMonitoring(timeSlot.timeSlotId);
+  for (const day of daysWithTimeSlots) {
+    let monitoringLines: Omit<MonitoringLine, "id">[] = [];
+    let { idsForMonitoring, idsForReservist } =
+      await getFreeTeachersInSameDayAndCountMonitoring(day);
+    const { monitoringInAfternoon, monitoringInMorning } =
+      await getMonitoringInDate(day);
 
-    for (const location of timeSlot.locations) {
-      let neededTeachers: number[] = [];
-      const teacherForLocation = locationTeacherMap.get(location.locationId);
-
-      if (teacherForLocation !== undefined) {
-        neededTeachers = teacherForLocation;
-      } else {
+    const processLocations = async (locations: LocationMonitoring[]) => {
+      for (const location of locations) {
         const neededTeacherNumber =
           location.locationType === "AMPHITHEATER"
             ? location.locationName === "NO"
               ? 4
               : 3
             : 2;
+        const neededTeachers = idsForMonitoring.slice(0, neededTeacherNumber);
+        idsForMonitoring = idsForMonitoring.slice(neededTeacherNumber);
 
-        const availableTeachers = freeTeachers.filter(
-          (teacher) => !assignedTeachers.includes(teacher.id)
-        );
-
-        neededTeachers = availableTeachers
-          .slice(0, neededTeacherNumber)
-          .map((teacher) => teacher.id);
-
-        assignedTeachers.push(...neededTeachers);
+        for (const item of location.monitoringSessions) {
+          for (const teacherId of neededTeachers) {
+            monitoringLines.push({
+              monitoringId: item.idMonitoring,
+              teacherId,
+            });
+          }
+        }
       }
+    };
 
-      for (const teacherId of neededTeachers) {
-        monitoringLines.push({
-          monitoringId: location.idMonitoring,
-          teacherId,
-        });
-      }
-      await insertMonitoringLines(monitoringLines);
-    }
+    await processLocations(monitoringInMorning);
+    await processLocations(monitoringInAfternoon);
+    await insertMonitoringLines(monitoringLines);
+    await assignReservistTeachersForDay(idsForReservist, day);
   }
-  const timeSlotIds = await groupByDateAndPeriod(timeSlots);
-  await assignReservistTeachers(timeSlotIds);
-
   await db
     .update(sessionExam)
     .set({ isValidated: true })
@@ -369,44 +358,6 @@ export const cancelSession = async (sessionId: number) => {
   }
 };
 
-export const assignReservistTeachers = async (monitoringSlots: number[][]) => {
-  try {
-    let assignedTeachers: { timeSlotId: number; teacherIds: number[] }[] = [];
-    for (const timeSlotIds of monitoringSlots) {
-      let occupiedLines: {
-        teacherId: number;
-        timeSlotId: number;
-        cause: string;
-      }[] = [];
-      const availableTeacherIds = await getAvailableTeacherIdsForReservists(
-        timeSlotIds[0]
-      );
-
-      // Fetch the number of teachers needed for this timeSlot
-      const neededReservistNumber = 10; // or another logic to determine the needed number of reservists
-      const selectedTeachers = availableTeacherIds.slice(
-        0,
-        neededReservistNumber
-      );
-      for (const timeSlotId of timeSlotIds) {
-        assignedTeachers.push({ timeSlotId, teacherIds: selectedTeachers });
-        // Update the database to mark these teachers as occupied for this time slot
-        for (const teacherId of selectedTeachers) {
-          occupiedLines.push({
-            teacherId,
-            timeSlotId,
-            cause: "RR",
-          });
-        }
-      }
-      await db.insert(occupiedTeacher).values(occupiedLines);
-    }
-    return assignedTeachers;
-  } catch (error) {
-    console.error("Error assigning reservist teachers:", error);
-    throw error;
-  }
-};
 interface Statistics {
   numberOfExams: number;
   numberOfTeachers: number;
@@ -505,3 +456,48 @@ export const getStatisticsOfLastSession = async (): Promise<Statistics> => {
     throw error;
   }
 };
+async function assignReservistTeachersForDay(
+  idsForReservist: number[],
+  day: DayWithTimeSlotIds
+) {
+  try {
+    if (idsForReservist.length < 20) {
+      throw new Error(
+        "Not enough reservists for assigning to this day. Please add more reservists."
+      );
+    }
+
+    // Diviser les identifiants des enseignants en deux groupes de 10
+    const firstHalfIds = idsForReservist.slice(0, 10);
+    const secondHalfIds = idsForReservist.slice(10, 20);
+
+    // Créer les lignes de réservistes pour les deux créneaux de la journée
+    const reservistLines: Omit<OccupiedTeacher, "id">[] = [];
+
+    // Pour les deux premiers créneaux
+    day.timeSlotIds.slice(0, 2).forEach((timeSlotId) => {
+      firstHalfIds.forEach((teacherId) => {
+        reservistLines.push({
+          teacherId,
+          timeSlotId: timeSlotId,
+          cause: "RR",
+        });
+      });
+    });
+
+    // Pour les deux derniers créneaux
+    day.timeSlotIds.slice(2, 4).forEach((timeSlotId) => {
+      secondHalfIds.forEach((teacherId) => {
+        reservistLines.push({
+          teacherId,
+          timeSlotId: timeSlotId,
+          cause: "RR",
+        });
+      });
+    });
+    await db.insert(occupiedTeacher).values(reservistLines);
+  } catch (error) {
+    console.error("Error assigning reservist teachers for day:", error);
+    throw error;
+  }
+}
