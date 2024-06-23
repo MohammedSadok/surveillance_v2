@@ -1,5 +1,7 @@
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { ModalProvider } from "@/providers/modal-provider";
+import { ToastProvider } from "@/providers/toast-provider";
 import type { Metadata } from "next";
 import { SessionProvider } from "next-auth/react";
 import { Inter as FontSans, Inter } from "next/font/google";
@@ -30,6 +32,8 @@ export default async function RootLayout({
             fontSans.variable
           )}
         >
+          <ToastProvider />
+          <ModalProvider />
           {children}
         </body>
       </SessionProvider>

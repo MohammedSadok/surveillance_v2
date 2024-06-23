@@ -9,6 +9,7 @@ import {
   OccupiedLocation,
 } from "@/lib/schema";
 import { desc, eq, notInArray } from "drizzle-orm";
+import { ExamLocation } from "./exam";
 import { getNumberOfStudentsInModule } from "./modules";
 import { getTimeSlotById } from "./timeSlot";
 
@@ -195,7 +196,7 @@ export const getFreeLocationsForModule = async (
 };
 
 export const reserveLocationsForModule = async (
-  locations: LocationType[],
+  locations: LocationType[] | ExamLocation[],
   examId: number
 ) => {
   try {

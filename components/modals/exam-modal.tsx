@@ -30,7 +30,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { getDepartments } from "@/data/departement";
-import { createExam } from "@/data/exam";
 import { getFreeLocations } from "@/data/location";
 import { getModulesForExam, getNumberOfStudentsInModule } from "@/data/modules";
 import { getFreeTeachersByDepartment } from "@/data/teacher";
@@ -39,15 +38,17 @@ import { Department, LocationType, ModuleType, Teacher } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { ExamSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowUpDown, Check, Loader2 } from "lucide-react";
+import { ArrowUpDown, Check, Loader2, Minus, Plus } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import * as z from "zod";
 import { FormError } from "../auth/form-error";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { ScrollArea } from "../ui/scroll-area";
+import { createExam } from "@/data/exam";
 import {
   Select,
   SelectContent,
@@ -97,21 +98,32 @@ const ExamModal = () => {
   }, [params.timeSlotId]);
 
   const handleCheckboxChange = (checked: boolean, locationId: number) => {
-    if (checked) {
-      const location = locations.find((loc) => loc.id === locationId);
-      if (location) {
-        setStudentNumber(
-          (prevStudentNumber) => prevStudentNumber - location.size
-        );
-      }
-    } else {
-      const location = locations.find((loc) => loc.id === locationId);
-      if (location) {
-        setStudentNumber(
-          (prevStudentNumber) => prevStudentNumber + location.size
-        );
-      }
+    const location = locations.find((loc) => loc.id === locationId);
+    if (location) {
+      setStudentNumber((prevStudentNumber) =>
+        checked
+          ? prevStudentNumber - location.size
+          : prevStudentNumber + location.size
+      );
     }
+  };
+
+  const handleLocationChange = (locationId: number, increment: boolean) => {
+    const currentLocations = form.getValues("locations");
+    let sizeChange = 0;
+    const updatedLocations = currentLocations.map((location) => {
+      if (location.id === locationId) {
+        sizeChange = increment ? 1 : -1;
+        return {
+          ...location,
+          size: location.size + sizeChange,
+        };
+      }
+      return location;
+    });
+
+    form.setValue("locations", updatedLocations);
+    setStudentNumber((prevStudentNumber) => prevStudentNumber - sizeChange);
   };
 
   useEffect(() => {
@@ -159,6 +171,7 @@ const ExamModal = () => {
           parseInt(params.sessionId)
         );
         setStudentNumber(number);
+        form.setValue("locations", []);
       } catch (error) {
         console.error("Erreur lors de la sélection des enseignants :", error);
       }
@@ -170,8 +183,12 @@ const ExamModal = () => {
 
   const onSubmit = async (values: z.infer<typeof ExamSchema>) => {
     try {
+      if (values.manual && studentNumber > 0) {
+        toast.error(
+          `Il n'y a pas assez de places pour ce module. Il y en a ${studentNumber}.`
+        );
+      }
       if (type === "createExam") await createExam(values);
-      // else if (exam) await updateExam({ ...values, id: exam.id });
       form.reset();
       router.refresh();
       onClose();
@@ -281,7 +298,6 @@ const ExamModal = () => {
                             </Command>
                           </PopoverContent>
                         </Popover>
-                        {/* <FormMessage /> */}
                       </FormItem>
                     )}
                   />
@@ -383,40 +399,76 @@ const ExamModal = () => {
                               key={item.id}
                               control={form.control}
                               name="locations"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem
-                                    key={item.id}
-                                    className="flex flex-row items-start space-x-3 space-y-0"
-                                  >
-                                    <FormControl>
-                                      <Checkbox
-                                        disabled={
-                                          !field.value?.includes(item.id) &&
-                                          studentNumber < 0
-                                        }
-                                        checked={field.value?.includes(item.id)}
-                                        onCheckedChange={(checked) => {
-                                          field.onChange(
-                                            checked
-                                              ? [...field.value, item.id]
-                                              : field.value?.filter(
-                                                  (value) => value !== item.id
-                                                )
-                                          );
-                                          handleCheckboxChange(
-                                            !!checked,
-                                            item.id
-                                          );
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="text-sm font-normal">
-                                      {item.name}
-                                    </FormLabel>
-                                  </FormItem>
-                                );
-                              }}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row space-x-3 space-y-0 rounded-md border items-center p-2 h-14">
+                                  <FormControl>
+                                    <Checkbox
+                                      disabled={
+                                        !field.value.some(
+                                          (location) => location.id === item.id
+                                        ) && studentNumber <= 0
+                                      }
+                                      checked={field.value?.some(
+                                        (location) => location.id === item.id
+                                      )}
+                                      onCheckedChange={(checked) => {
+                                        const locationObj = {
+                                          id: item.id,
+                                          size: item.size,
+                                        };
+                                        field.onChange(
+                                          checked
+                                            ? [...field.value, locationObj]
+                                            : field.value?.filter(
+                                                (value) => value.id !== item.id
+                                              )
+                                        );
+                                        handleCheckboxChange(
+                                          !!checked,
+                                          item.id
+                                        );
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="flex flex-1 justify-start items-center">
+                                    {item.name}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="ml-2"
+                                      onClick={(e: any) => {
+                                        e.preventDefault();
+                                        if (studentNumber > 0)
+                                          handleLocationChange(item.id, true);
+                                      }}
+                                    >
+                                      <Plus size={14} />
+                                    </Button>
+                                    <span>
+                                      {
+                                        form
+                                          .getValues("locations")
+                                          .find(
+                                            (location) =>
+                                              location.id === item.id
+                                          )?.size
+                                      }
+                                    </span>
+
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="mr-2"
+                                      onClick={(e: any) => {
+                                        e.preventDefault(),
+                                          handleLocationChange(item.id, false);
+                                      }}
+                                    >
+                                      <Minus size={14} />
+                                    </Button>
+                                  </FormLabel>
+                                </FormItem>
+                              )}
                             />
                           ))}
                         <FormMessage />

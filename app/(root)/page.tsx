@@ -1,135 +1,36 @@
-// import { RecentExams } from "@/components/recent-exams";
-import { Overview } from "@/components/overview";
-import { RecentExams } from "@/components/recent-exams";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Heading } from "@/components/ui/heading";
-import { Separator } from "@/components/ui/separator";
-import { getStatisticsOfLastSession } from "@/data/session";
-import { BookCheck, Users } from "lucide-react";
+import { UserNav } from "@/components/navigation/user-nav";
+import { gestSessions } from "@/data/session";
+import logo from "@/images/logo.png";
+import Image from "next/image";
+import { SessionClient } from "./components/Client";
 
-const DashboardPage = async () => {
-  const {
-    lastFiveExams,
-    examsPerDay,
-    numberOfTeachers,
-    numberOfDepartments,
-    numberOfExams,
-    totalMonitoring,
-  } = await getStatisticsOfLastSession();
+const SessionsPage = async () => {
+  const sessions = await gestSessions();
+
   return (
-    <>
-      <div className="flex items-center justify-between">
-        <Heading title={`Sessions`} description="Gérer les sessions" />
-      </div>
-      <Separator className="my-4" />
-      <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Exams</CardTitle>
-              <BookCheck className="text-gray-600 w-5" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{numberOfExams}</div>
-              <p className="text-xs text-muted-foreground">
-                Nombre total d&apos;exams du dernier session
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Enseignants</CardTitle>
-              <Users className="text-gray-600 w-5" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{numberOfTeachers}</div>
-              <p className="text-xs text-muted-foreground">
-                Nombre total d&apos;enseignants dans la faculte
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Nombre total de départements
-              </CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <rect width="20" height="14" x="2" y="5" rx="2" />
-                <path d="M2 10h20" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{numberOfDepartments}</div>
-              <p className="text-xs text-muted-foreground">
-                +19% par rapport au mois dernier
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Surveillance actuelle
-              </CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {(totalMonitoring / numberOfTeachers).toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Moyenne de surveillance par enseignant dans la dernière session
-              </p>
-            </CardContent>
-          </Card>
+    <div className="flex flex-col space-y-2">
+      <header className="sticky top-0 z-40 border-b bg-background">
+        <div className="container flex h-16 items-center justify-between py-4">
+          <Image
+            src={logo}
+            alt={""}
+            style={{
+              objectFit: "contain",
+            }}
+            className="w-[120px]"
+          />
+          <div className="flex justify-center items-center space-x-2">
+            <UserNav />
+          </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <Card className="col-span-4">
-            <CardHeader>
-              <CardTitle>Aperçu</CardTitle>
-            </CardHeader>
-            <CardContent className="pl-2">
-              <Overview data={examsPerDay} />
-            </CardContent>
-          </Card>
-          <Card className="col-span-3">
-            <CardHeader>
-              <CardTitle>Exams récentes</CardTitle>
-              <CardDescription>Les cinq dernier exams</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RecentExams lastExams={lastFiveExams} />
-            </CardContent>
-          </Card>
+      </header>
+      <main className="flex w-full flex-1 flex-col overflow-hidden container">
+        <div className="flex-1 space-y-4 ">
+          <SessionClient data={sessions} />
         </div>
-      </div>
-    </>
+      </main>
+    </div>
   );
 };
 
-export default DashboardPage;
+export default SessionsPage;

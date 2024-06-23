@@ -88,7 +88,14 @@ const StudentSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
 });
-
+const LocationExamSchema = z.object({
+  id: z.number().int().min(1, {
+    message: "L'identifiant de la locale est requis.",
+  }),
+  size: z.number().int().min(0, {
+    message: "Le nombre d'étudiants affectés dans ce local est requis.",
+  }),
+});
 export const ExamSchema = z.object({
   moduleId: z.string().min(1, {
     message: "Le module est requis",
@@ -100,7 +107,7 @@ export const ExamSchema = z.object({
     message: "L'identifiant de l'intervalle de temps est requis.",
   }),
   manual: z.boolean().default(false),
-  locations: z.array(z.number()),
+  locations: z.array(LocationExamSchema),
 });
 
 export const LoginSchema = z.object({

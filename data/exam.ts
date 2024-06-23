@@ -3,6 +3,7 @@ import { db } from "@/lib/config";
 import {
   Exam,
   exam,
+  LocationType,
   moduleTable,
   occupiedTeacher,
   student,
@@ -18,25 +19,27 @@ import {
 import { getStudentsInModule } from "./modules";
 import { createOccupiedTeacherInPeriod } from "./teacher";
 import { getTimeSlotById, getTimeSlotsInSameDayAndPeriod } from "./timeSlot";
-
+export interface ExamLocation {
+  id: number;
+  size: number;
+}
 export type ExamType = {
-  locations: number[];
+  locations: ExamLocation[];
   manual: boolean;
 } & Omit<Exam, "id">;
 export const createExam = async (newExam: ExamType) => {
   try {
-    const locations = await getFreeLocationsForModule(
-      newExam.moduleId,
-      newExam.timeSlotId
-    );
+    let locations: ExamLocation[] | LocationType[] = [];
     const selectedTimeSlot = await getTimeSlotById(newExam.timeSlotId);
     if (selectedTimeSlot) {
-      const createdExam = await db.insert(exam).values(newExam);
-      await createOccupiedTeacherInPeriod({
-        teacherId: newExam.responsibleId,
-        cause: "TT",
-        timeSlotId: newExam.timeSlotId,
-      });
+      if (newExam.manual) {
+        locations = newExam.locations;
+      } else {
+        locations = await getFreeLocationsForModule(
+          newExam.moduleId,
+          newExam.timeSlotId
+        );
+      }
       const students = await getStudentsInModule(
         newExam.moduleId,
         selectedTimeSlot.sessionExamId
@@ -50,6 +53,12 @@ export const createExam = async (newExam: ExamType) => {
         examId: number;
         locationId: number;
       }> = [];
+      const createdExam = await db.insert(exam).values(newExam);
+      await createOccupiedTeacherInPeriod({
+        teacherId: newExam.responsibleId,
+        cause: "TT",
+        timeSlotId: newExam.timeSlotId,
+      });
 
       for (const location of locations) {
         for (
@@ -66,7 +75,6 @@ export const createExam = async (newExam: ExamType) => {
           studentIndex++;
         }
       }
-
       await db.insert(studentExamLocation).values(studentExamLocationsTable);
       await reserveLocationsForModule(locations, createdExam[0].insertId);
     }
