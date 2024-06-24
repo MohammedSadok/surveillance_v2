@@ -10,10 +10,18 @@ import { Plus } from "lucide-react";
 import { columns } from "./Columns";
 interface LocationClientProps {
   data: LocationType[];
+  sessionId: string;
 }
 
-export const LocationClient: React.FC<LocationClientProps> = ({ data }) => {
+export const LocationClient: React.FC<LocationClientProps> = ({
+  data,
+  sessionId,
+}) => {
   const { onOpen } = useModal();
+  const tableColumns = columns({
+    sessionId,
+    locations: data,
+  });
   return (
     <>
       <div className="flex items-center justify-between">
@@ -26,7 +34,7 @@ export const LocationClient: React.FC<LocationClientProps> = ({ data }) => {
         </Button>
       </div>
       <Separator />
-      <DataTable searchKey="name" columns={columns} data={data} />
+      <DataTable searchKey="name" columns={tableColumns} data={data} />
     </>
   );
 };

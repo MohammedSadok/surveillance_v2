@@ -1,14 +1,29 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
-
 import { Teacher } from "@/lib/schema";
+import { ColumnDef } from "@tanstack/react-table";
 import { Check, X } from "lucide-react";
+import Link from "next/link";
 import { CellAction } from "./CellAction";
-export const columns: ColumnDef<Teacher>[] = [
+interface ColumnsProps {
+  sessionId: number;
+  teachers: Teacher[];
+}
+export const columns = ({
+  sessionId,
+  teachers,
+}: ColumnsProps): ColumnDef<Teacher>[] => [
   {
     accessorKey: "lastName",
     header: "Nom",
+    cell: ({ row }) => (
+      <Link
+        href={`/sessions/${sessionId}/department/${row.original.id}/${row.original.id}`}
+        className="underline"
+      >
+        {row.original.lastName}
+      </Link>
+    ),
   },
   {
     accessorKey: "firstName",

@@ -5,21 +5,26 @@ import { DataTable } from "@/components/ui/data-table";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { useModal } from "@/hooks/useModalStore";
+import { Department, Teacher } from "@/lib/schema";
 import { Plus } from "lucide-react";
 import { columns } from "./Columns";
-import { Department, Teacher } from "@/lib/schema";
 
 interface TeacherClientProps {
   data: Teacher[];
   department: Department;
+  sessionId: number;
 }
 
 export const TeacherClient: React.FC<TeacherClientProps> = ({
   data,
   department,
+  sessionId,
 }) => {
   const { onOpen } = useModal();
-
+  const tableColumns = columns({
+    sessionId,
+    teachers: data,
+  });
   return (
     <>
       <div className="flex items-center justify-between">
@@ -32,7 +37,7 @@ export const TeacherClient: React.FC<TeacherClientProps> = ({
         </Button>
       </div>
       <Separator />
-      <DataTable searchKey="lastName" columns={columns} data={data} />
+      <DataTable searchKey="lastName" columns={tableColumns} data={data} />
     </>
   );
 };

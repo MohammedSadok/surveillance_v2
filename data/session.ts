@@ -257,14 +257,13 @@ export type CreateSessionType = {
 
 export const validateSession = async (sessionId: number) => {
   const daysWithTimeSlots = await getDaysWithTimeSlots(sessionId);
-
   for (const day of daysWithTimeSlots) {
     let monitoringLines: Omit<MonitoringLine, "id">[] = [];
     let { idsForMonitoring, idsForReservist } =
       await getFreeTeachersInSameDayAndCountMonitoring(day);
+
     const { monitoringInAfternoon, monitoringInMorning } =
       await getMonitoringInDate(day);
-
     const processLocations = async (locations: LocationMonitoring[]) => {
       for (const location of locations) {
         const neededTeacherNumber =
@@ -286,10 +285,12 @@ export const validateSession = async (sessionId: number) => {
         }
       }
     };
-
-    await processLocations(monitoringInMorning);
-    await processLocations(monitoringInAfternoon);
-    await insertMonitoringLines(monitoringLines);
+    if (monitoringInMorning.length > 0)
+      await processLocations(monitoringInMorning);
+    if (monitoringInAfternoon.length > 0)
+      await processLocations(monitoringInAfternoon);
+    if (monitoringLines.length > 0)
+      await insertMonitoringLines(monitoringLines);
     await assignReservistTeachersForDay(idsForReservist, day);
   }
   await db
@@ -297,6 +298,7 @@ export const validateSession = async (sessionId: number) => {
     .set({ isValidated: true })
     .where(eq(sessionExam.id, sessionId));
 };
+
 export const cancelSession = async (sessionId: number) => {
   try {
     // Fetch monitoring IDs related to the given session ID

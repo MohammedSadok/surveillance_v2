@@ -6,19 +6,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-import { useRouter } from "next/navigation";
-import React from "react";
-
-import { DayWithTimeSlots } from "@/lib/utils";
-
+import { OccupationCalendar } from "@/data/teacher";
+import { useModal } from "@/hooks/useModalStore";
 interface ScheduleProps {
-  sessionDays: DayWithTimeSlots[];
-  sessionId: string;
+  sessionDays: OccupationCalendar[];
+  teacherId: number;
 }
-
-const Schedule: React.FC<ScheduleProps> = ({ sessionDays, sessionId }) => {
-  const router = useRouter();
+const TeacherSchedule: React.FC<ScheduleProps> = ({
+  sessionDays,
+  teacherId,
+}) => {
+  const { onOpen } = useModal();
   return (
     <Table className="border rounded-lg mt-2">
       <TableHeader>
@@ -43,19 +41,27 @@ const Schedule: React.FC<ScheduleProps> = ({ sessionDays, sessionId }) => {
               <TableCell
                 key={timeSlot.id}
                 className="border text-center cursor-pointer hover:bg-gray-300"
-                onClick={() =>
-                  router.push(`/sessions/${sessionId}/${timeSlot.id}`, {
-                    scroll: false,
-                  })
-                }
+                onClick={() => {
+                  if (!timeSlot.cause) {
+                    onOpen("createOccupiedTeacher", {
+                      occupiedTeacher: {
+                        cause: "",
+                        teacherId,
+                        timeSlotId: timeSlot.id,
+                      },
+                    });
+                  } else if (timeSlot.cause !== "TT") {
+                    onOpen("updateOccupiedTeacher", {
+                      occupiedTeacher: {
+                        cause: timeSlot.cause,
+                        teacherId,
+                        timeSlotId: timeSlot.id,
+                      },
+                    });
+                  }
+                }}
               >
-                {timeSlot.exams.length > 0
-                  ? timeSlot.exams.map((exam) => (
-                      <div key={exam.id}>
-                        <p>{exam.moduleName}</p>
-                      </div>
-                    ))
-                  : null}
+                {timeSlot.cause}
               </TableCell>
             ))}
           </TableRow>
@@ -65,4 +71,4 @@ const Schedule: React.FC<ScheduleProps> = ({ sessionDays, sessionId }) => {
   );
 };
 
-export default Schedule;
+export default TeacherSchedule;

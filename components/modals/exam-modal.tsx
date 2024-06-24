@@ -30,6 +30,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { getDepartments } from "@/data/departement";
+import { createExam } from "@/data/exam";
 import { getFreeLocations } from "@/data/location";
 import { getModulesForExam, getNumberOfStudentsInModule } from "@/data/modules";
 import { getFreeTeachersByDepartment } from "@/data/teacher";
@@ -48,7 +49,6 @@ import { FormError } from "../auth/form-error";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { ScrollArea } from "../ui/scroll-area";
-import { createExam } from "@/data/exam";
 import {
   Select,
   SelectContent,
@@ -177,6 +177,7 @@ const ExamModal = () => {
       }
     };
     if ((params.sessionId, moduleId)) fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId, params.sessionId]);
 
   const isLoading = form.formState.isSubmitting;
@@ -187,6 +188,7 @@ const ExamModal = () => {
         toast.error(
           `Il n'y a pas assez de places pour ce module. Il y en a ${studentNumber}.`
         );
+        return;
       }
       if (type === "createExam") await createExam(values);
       form.reset();

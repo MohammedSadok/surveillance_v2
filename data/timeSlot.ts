@@ -52,19 +52,6 @@ export const getTimeSlotsInSameDayAndPeriod = async (
   }
 };
 
-export const getTimeSlotsInSession = async (sessionId: number) => {
-  try {
-    const result = await db
-      .select()
-      .from(timeSlot)
-      .where(eq(timeSlot.sessionExamId, sessionId));
-    return result;
-  } catch (error) {
-    console.error("Error fetching time slots in session:", error);
-    throw error;
-  }
-};
-
 export const getTimeSlotsInSameDay = async (timeSlotId: number) => {
   try {
     const selectedTimeSlot = await getTimeSlotById(timeSlotId);
@@ -125,3 +112,38 @@ export interface DayWithTimeSlotIds {
   date: string;
   timeSlotIds: number[];
 }
+
+export interface Calendar {
+  date: string;
+  timeSlots: CalendarTimeSlots[];
+}
+export type CalendarTimeSlots = Omit<TimeSlot, "date" | "sessionExamId">;
+
+export const getCalendar = async (sessionId: number): Promise<Calendar[]> => {
+  try {
+    const result = await db
+      .select()
+      .from(timeSlot)
+      .where(eq(timeSlot.sessionExamId, sessionId));
+
+    const days = result.reduce((acc, row) => {
+      const dateKey = row.date.toISOString().split("T")[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = { date: dateKey, timeSlots: [] };
+      }
+
+      const currentSlots = acc[dateKey].timeSlots;
+      currentSlots.push({
+        id: row.id,
+        period: row.period,
+        timePeriod: row.timePeriod,
+      });
+      return acc;
+    }, {} as Record<string, Calendar>);
+
+    return Object.values(days);
+  } catch (error) {
+    console.error("Error fetching days with time slots:", error);
+    throw error;
+  }
+};

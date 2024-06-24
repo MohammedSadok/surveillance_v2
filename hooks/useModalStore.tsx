@@ -2,6 +2,8 @@ import {
   Department,
   Exam,
   LocationType,
+  OccupiedLocation,
+  OccupiedTeacher,
   SessionExam,
   StudentType,
   Teacher,
@@ -10,6 +12,10 @@ import {
 import { create } from "zustand";
 
 export type ModalType =
+  | "createOccupiedLocation"
+  | "updateOccupiedLocation"
+  | "createOccupiedTeacher"
+  | "updateOccupiedTeacher"
   | "createStudent"
   | "updateStudent"
   | "createSession"
@@ -24,6 +30,8 @@ export type ModalType =
   | "updateUser";
 
 interface ModalData {
+  occupiedLocation?: Omit<OccupiedLocation, "id">;
+  occupiedTeacher?: Omit<OccupiedTeacher, "id">;
   student?: StudentType;
   session?: SessionExam;
   department?: Department;

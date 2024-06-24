@@ -9,8 +9,9 @@ import {
   teacher,
   Teacher,
   timeSlot,
+  TimeSlot,
 } from "@/lib/schema";
-import { and, count, eq, inArray, notInArray } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
 import {
   DayWithTimeSlotIds,
   getTimeSlotById,
@@ -22,16 +23,6 @@ export const createTeacher = async (newTeacher: Omit<Teacher, "id">) => {
     await db.insert(teacher).values(newTeacher);
   } catch (error) {
     console.error("Error creating teacher:", error);
-    throw error;
-  }
-};
-
-export const getTeachers = async (): Promise<Teacher[]> => {
-  try {
-    const result = await db.select().from(teacher);
-    return result;
-  } catch (error) {
-    console.error("Error fetching teachers:", error);
     throw error;
   }
 };
@@ -80,51 +71,6 @@ export const deleteTeacher = async (id: number): Promise<void> => {
     await db.delete(teacher).where(eq(teacher.id, id));
   } catch (error) {
     console.error("Error deleting teacher:", error);
-    throw error;
-  }
-};
-
-export const getFreeTeachers = async (
-  timeSlotId: number
-): Promise<Teacher[]> => {
-  try {
-    const occupiedTeachers = await db
-      .select({ teacherId: occupiedTeacher.id })
-      .from(occupiedTeacher)
-      .where(eq(occupiedTeacher.timeSlotId, timeSlotId));
-
-    const occupiedTeacherIds = occupiedTeachers.map(
-      (occupiedTeacher) => occupiedTeacher.teacherId
-    );
-
-    const monitoringTeachers = await db
-      .select({ monitoringId: monitoring.id })
-      .from(monitoringLine)
-      .innerJoin(monitoring, eq(monitoringLine.monitoringId, monitoring.id))
-      .innerJoin(exam, eq(monitoring.examId, exam.id))
-      .where(eq(exam.timeSlotId, timeSlotId));
-
-    const monitoringTeacherIds = monitoringTeachers.map(
-      (monitoringTeacher) => monitoringTeacher.monitoringId
-    );
-
-    let freeTeachers: Teacher[] = [];
-    if (occupiedTeacherIds.length === 0 && monitoringTeacherIds.length === 0) {
-      freeTeachers = await db
-        .select()
-        .from(teacher)
-        .where(
-          notInArray(teacher.id, [
-            ...occupiedTeacherIds,
-            ...monitoringTeacherIds,
-          ])
-        );
-    } else {
-      freeTeachers = await db.select().from(teacher);
-    }
-    return freeTeachers;
-  } catch (error) {
-    console.error("Error fetching free teachers:", error);
     throw error;
   }
 };
@@ -180,176 +126,50 @@ export const getFreeTeachersByDepartment = async (
   }
 };
 
-export const createOccupiedTeacherInPeriod = async (
+export const createOccupiedTeacher = async (
   newOccupiedTeacher: Omit<OccupiedTeacher, "id">
 ) => {
   try {
-    const selectedTimeSlot = await getTimeSlotById(
-      newOccupiedTeacher.timeSlotId
-    );
-    const timeSlotInSameDay = await getTimeSlotsInSameDayAndPeriod(
-      newOccupiedTeacher.timeSlotId
-    );
-    if (selectedTimeSlot && timeSlotInSameDay) {
-      const occupiedTeacherInPeriod: Omit<OccupiedTeacher, "id">[] =
-        timeSlotInSameDay.map((timeSlot) => {
-          return {
-            cause: newOccupiedTeacher.cause,
-            teacherId: newOccupiedTeacher.teacherId,
-            timeSlotId: timeSlot.id,
-          };
-        });
-      await db.insert(occupiedTeacher).values(occupiedTeacherInPeriod);
-    }
+    await db.insert(occupiedTeacher).values(newOccupiedTeacher);
   } catch (error) {
     console.error("Error creating occupied teacher:", error);
     throw error;
   }
 };
-export const getFreeTeachersForMonitoring = async (timeSlotId: number) => {
+
+export const updateOccupiedTeacher = async (
+  newOccupiedTeacher: Omit<OccupiedTeacher, "id">
+) => {
   try {
-    // Fetch occupied teachers for the given time slot
-    const occupiedTeachers = await db
-      .select({
-        teacherId: occupiedTeacher.teacherId,
-        cause: occupiedTeacher.cause,
-      })
-      .from(occupiedTeacher)
-      .where(eq(occupiedTeacher.timeSlotId, timeSlotId));
-
-    const occupiedTeacherIds = occupiedTeachers.map(
-      (occupiedTeacher) => occupiedTeacher.teacherId
-    );
-
-    // Fetch teachers already monitoring exams in the given time slot
-    const monitoringTeachers = await db
-      .select({ teacherId: monitoringLine.teacherId })
-      .from(monitoringLine)
-      .innerJoin(monitoring, eq(monitoringLine.monitoringId, monitoring.id))
-      .innerJoin(exam, eq(monitoring.examId, exam.id))
-      .where(eq(exam.timeSlotId, timeSlotId));
-
-    const monitoringTeacherIds = monitoringTeachers.map(
-      (monitoringTeacher) => monitoringTeacher.teacherId
-    );
-
-    // Combine the occupied and monitoring teacher IDs to get the unavailable teachers
-    const unavailableTeacherIds = [
-      ...new Set([...occupiedTeacherIds, ...monitoringTeacherIds]),
-    ];
-
-    // Fetch all teachers who are not unavailable (i.e., who are free for monitoring)
-    let freeTeachers = await db
-      .select()
-      .from(teacher)
-      .where(notInArray(teacher.id, unavailableTeacherIds));
-
-    // Count the number of monitorings each teacher has conducted
-    const monitoringCounts = await db
-      .select({
-        teacherId: monitoringLine.teacherId,
-        monitoringCount: count(monitoringLine.monitoringId).as(
-          "monitoringCount"
-        ),
-        occupiedCount: count(occupiedTeacher.id).as("occupiedCount"),
-      })
-      .from(monitoringLine)
-      .innerJoin(
-        occupiedTeacher,
-        eq(monitoringLine.teacherId, occupiedTeacher.id)
-      )
-      .groupBy(monitoringLine.teacherId);
-
-    // Merge the monitoringCounts and occupiedCounts
-    const monitoringCountMap = new Map<number, number>();
-    monitoringCounts.forEach(
-      ({ teacherId, monitoringCount, occupiedCount }) => {
-        monitoringCountMap.set(teacherId, monitoringCount + occupiedCount);
-      }
-    );
-
-    // Sort free teachers by their total counts (monitoring + occupied)
-    freeTeachers = freeTeachers.sort((a, b) => {
-      const countA = monitoringCountMap.get(a.id) || 0;
-      const countB = monitoringCountMap.get(b.id) || 0;
-      return countA - countB;
-    });
-
-    const timeSlots = await getTimeSlotsInSameDayAndPeriod(timeSlotId);
-    const OtherTimeSlotId = timeSlots?.filter(
-      (timeSlot) => timeSlot.id !== timeSlotId
-    );
-
-    let locationTeacherMap = new Map<number, number[]>();
-    if (OtherTimeSlotId) {
-      const teachersInSamePeriod = await db
-        .select({
-          teacherId: monitoringLine.teacherId,
-          locationId: monitoring.locationId,
-        })
-        .from(monitoring)
-        .innerJoin(exam, eq(monitoring.examId, exam.id))
-        .innerJoin(timeSlot, eq(exam.timeSlotId, timeSlot.id))
-        .innerJoin(
-          monitoringLine,
-          eq(monitoring.id, monitoringLine.monitoringId)
+    await db
+      .update(occupiedTeacher)
+      .set(newOccupiedTeacher)
+      .where(
+        and(
+          eq(occupiedTeacher.teacherId, newOccupiedTeacher.teacherId),
+          eq(occupiedTeacher.timeSlotId, newOccupiedTeacher.timeSlotId)
         )
-        .where(
-          and(
-            eq(timeSlot.id, OtherTimeSlotId[0].id),
-            notInArray(monitoringLine.teacherId, unavailableTeacherIds)
-          )
-        );
-      teachersInSamePeriod.forEach((teacher) => {
-        if (locationTeacherMap.has(teacher.locationId)) {
-          locationTeacherMap.get(teacher.locationId)!.push(teacher.teacherId);
-        } else {
-          locationTeacherMap.set(teacher.locationId, [teacher.teacherId]);
-        }
-      });
-    }
-
-    return { freeTeachers, locationTeacherMap };
+      );
   } catch (error) {
-    console.error("Error fetching free teachers:", error);
+    console.error("Error updating occupied teacher:", error);
     throw error;
   }
 };
 
-export const getTeachersInTheSamePeriod = async (
-  timeSlotId: number
-): Promise<Map<number, number[]>> => {
+export const deleteOccupiedTeacher = async (
+  newOccupiedTeacher: Omit<OccupiedTeacher, "id">
+) => {
   try {
-    const timeSlots = await getTimeSlotsInSameDayAndPeriod(timeSlotId);
-    const OtherTimeSlotId = timeSlots?.filter(
-      (timeSlot) => timeSlot.id !== timeSlotId
-    );
-    let locationTeacherMap = new Map<number, number[]>();
-    if (OtherTimeSlotId) {
-      const teachersInSamePeriod = await db
-        .select({
-          teacherId: monitoringLine.teacherId,
-          locationId: monitoring.locationId,
-        })
-        .from(monitoring)
-        .innerJoin(exam, eq(monitoring.examId, exam.id))
-        .innerJoin(timeSlot, eq(exam.timeSlotId, timeSlot.id))
-        .innerJoin(
-          monitoringLine,
-          eq(monitoring.id, monitoringLine.monitoringId)
+    await db
+      .delete(occupiedTeacher)
+      .where(
+        and(
+          eq(occupiedTeacher.teacherId, newOccupiedTeacher.teacherId),
+          eq(occupiedTeacher.timeSlotId, newOccupiedTeacher.timeSlotId)
         )
-        .where(eq(timeSlot.id, OtherTimeSlotId[0].id));
-      teachersInSamePeriod.forEach((teacher) => {
-        if (locationTeacherMap.has(teacher.locationId)) {
-          locationTeacherMap.get(teacher.locationId)!.push(teacher.teacherId);
-        } else {
-          locationTeacherMap.set(teacher.locationId, [teacher.teacherId]);
-        }
-      });
-    }
-    return locationTeacherMap;
+      );
   } catch (error) {
-    console.error("Error fetching teachers:", error);
+    console.error("Error deleting occupied teacher:", error);
     throw error;
   }
 };
@@ -359,23 +179,18 @@ export const getFreeTeachersInSameDayAndCountMonitoring = async (
 ) => {
   try {
     // Fetch occupied teachers for the given time slots
-    const occupiedTeachersPromise = db
+    const occupiedTeachers = await db
       .select({ teacherId: occupiedTeacher.teacherId })
       .from(occupiedTeacher)
       .where(inArray(occupiedTeacher.timeSlotId, day.timeSlotIds));
 
     // Fetch teachers who are monitoring exams in the given time slots
-    const monitoringTeachersPromise = db
+    const monitoringTeachers = await db
       .select({ teacherId: monitoringLine.teacherId })
       .from(monitoringLine)
       .innerJoin(monitoring, eq(monitoringLine.monitoringId, monitoring.id))
       .innerJoin(exam, eq(monitoring.examId, exam.id))
       .where(inArray(exam.timeSlotId, day.timeSlotIds));
-
-    const [occupiedTeachers, monitoringTeachers] = await Promise.all([
-      occupiedTeachersPromise,
-      monitoringTeachersPromise,
-    ]);
 
     const occupiedTeacherIds = occupiedTeachers.map(
       (occupiedTeacher) => occupiedTeacher.teacherId
@@ -386,12 +201,13 @@ export const getFreeTeachersInSameDayAndCountMonitoring = async (
     );
 
     // Combine occupied and monitoring teacher IDs to get unavailable teachers
+    //-1 is used to prevent error when no teachers are found
     const unavailableTeacherIds = [
-      ...new Set([...occupiedTeacherIds, ...monitoringTeacherIds]),
+      ...new Set([...occupiedTeacherIds, ...monitoringTeacherIds, -1]),
     ];
 
     // Fetch all teachers who are not unavailable (i.e., who are free)
-    const freeTeachersPromise = db
+    const freeTeachers = await db
       .select()
       .from(teacher)
       .where(
@@ -401,7 +217,7 @@ export const getFreeTeachersInSameDayAndCountMonitoring = async (
         )
       );
 
-    const occupationCountsReservistPromise = db
+    const occupationCountsReservist = await db
       .select({
         teacherId: occupiedTeacher.teacherId,
         count: count(occupiedTeacher.id).as("count"),
@@ -414,11 +230,6 @@ export const getFreeTeachersInSameDayAndCountMonitoring = async (
         )
       )
       .groupBy(occupiedTeacher.teacherId);
-
-    const [freeTeachers, occupationCountsReservist] = await Promise.all([
-      freeTeachersPromise,
-      occupationCountsReservistPromise,
-    ]);
 
     // Create a map of teacher ID to occupation count
     const occupationCountMapReservist = occupationCountsReservist.reduce(
@@ -442,16 +253,16 @@ export const getFreeTeachersInSameDayAndCountMonitoring = async (
       .slice(0, 20)
       .map((entry) => entry.id);
 
-    const monitoringCountsPromise = db
+    const monitoringCounts = await db
       .select({
         teacherId: monitoringLine.teacherId,
         count: count(monitoringLine.id).as("count"),
       })
       .from(monitoringLine)
-      .where(notInArray(monitoringLine.teacherId, unavailableTeacherIds))
+      .where(notInArray(monitoringLine.teacherId, [...unavailableTeacherIds]))
       .groupBy(monitoringLine.teacherId);
 
-    const occupationCountsPromise = db
+    const occupationCounts = await db
       .select({
         teacherId: occupiedTeacher.teacherId,
         count: count(occupiedTeacher.id).as("count"),
@@ -464,11 +275,6 @@ export const getFreeTeachersInSameDayAndCountMonitoring = async (
         )
       )
       .groupBy(occupiedTeacher.teacherId);
-
-    const [monitoringCounts, occupationCounts] = await Promise.all([
-      monitoringCountsPromise,
-      occupationCountsPromise,
-    ]);
 
     // Create a map of teacher ID to monitoring count
     const monitoringCountMap = monitoringCounts.reduce((acc, row) => {
@@ -510,6 +316,125 @@ export const getFreeTeachersInSameDayAndCountMonitoring = async (
       "Error fetching available teacher IDs for reservists:",
       error
     );
+    throw error;
+  }
+};
+
+export const createOccupiedTeacherInPeriod = async (
+  newOccupiedTeacher: Omit<OccupiedTeacher, "id">
+) => {
+  try {
+    const selectedTimeSlot = await getTimeSlotById(
+      newOccupiedTeacher.timeSlotId
+    );
+    const timeSlotInSameDay = await getTimeSlotsInSameDayAndPeriod(
+      newOccupiedTeacher.timeSlotId
+    );
+    if (selectedTimeSlot && timeSlotInSameDay) {
+      const occupiedTeacherInPeriod: Omit<OccupiedTeacher, "id">[] =
+        timeSlotInSameDay.map((timeSlot) => {
+          return {
+            cause: newOccupiedTeacher.cause,
+            teacherId: newOccupiedTeacher.teacherId,
+            timeSlotId: timeSlot.id,
+          };
+        });
+      await db.insert(occupiedTeacher).values(occupiedTeacherInPeriod);
+    }
+  } catch (error) {
+    console.error("Error creating occupied teacher:", error);
+    throw error;
+  }
+};
+export interface OccupationCalendar {
+  date: string;
+  timeSlots: CalendarTimeSlots[];
+}
+
+export type CalendarTimeSlots = Omit<TimeSlot, "date" | "sessionExamId"> & {
+  cause: string | null;
+};
+/**
+ *
+ * @param sessionId
+ * @param teacherId
+ * @returns Promise<OccupationCalendar[]>
+ * Get the teacher's occupation calendar
+ */
+export const getTeacherCalendar = async (
+  sessionId: number,
+  teacherId: number
+): Promise<OccupationCalendar[]> => {
+  try {
+    const calendar = await db
+      .select({
+        id: timeSlot.id,
+        date: timeSlot.date,
+        period: timeSlot.period,
+        timePeriod: timeSlot.timePeriod,
+      })
+      .from(timeSlot)
+      .where(eq(timeSlot.sessionExamId, sessionId));
+
+    const timeSlots = db
+      .select({
+        id: timeSlot.id,
+        date: timeSlot.date,
+        period: timeSlot.period,
+        timePeriod: timeSlot.timePeriod,
+      })
+      .from(timeSlot)
+      .where(eq(timeSlot.sessionExamId, sessionId))
+      .as("timeSlots");
+
+    const teachers = await db
+      .select({
+        id: timeSlots.id,
+        cause: occupiedTeacher.cause,
+      })
+      .from(timeSlots)
+      .leftJoin(occupiedTeacher, eq(timeSlots.id, occupiedTeacher.timeSlotId))
+      .where(eq(occupiedTeacher.teacherId, teacherId));
+
+    const teacherCalendar = calendar.map((row) => {
+      const timeSlot = teachers.find((timeSlot) => timeSlot.id === row.id);
+      if (timeSlot) {
+        return {
+          date: row.date.toISOString().split("T")[0],
+          id: row.id,
+          period: row.period,
+          timePeriod: row.timePeriod,
+          cause: timeSlot.cause,
+        };
+      } else {
+        return {
+          date: row.date.toISOString().split("T")[0],
+          id: row.id,
+          period: row.period,
+          timePeriod: row.timePeriod,
+          cause: null,
+        };
+      }
+    });
+
+    const days = teacherCalendar.reduce((acc, row) => {
+      const dateKey = row.date;
+      if (!acc[dateKey]) {
+        acc[dateKey] = { date: dateKey, timeSlots: [] };
+      }
+
+      const currentSlots = acc[dateKey].timeSlots;
+      currentSlots.push({
+        id: row.id,
+        period: row.period,
+        timePeriod: row.timePeriod,
+        cause: row.cause,
+      });
+      return acc;
+    }, {} as Record<string, OccupationCalendar>);
+    return Object.values(days);
+  } catch (error) {
+    console.error("Error fetching days with time slots:", error);
     throw error;
   }
 };

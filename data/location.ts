@@ -7,8 +7,10 @@ import {
   monitoring,
   occupiedLocation,
   OccupiedLocation,
+  TimeSlot,
+  timeSlot,
 } from "@/lib/schema";
-import { desc, eq, notInArray } from "drizzle-orm";
+import { and, desc, eq, isNull, notInArray, or } from "drizzle-orm";
 import { ExamLocation } from "./exam";
 import { getNumberOfStudentsInModule } from "./modules";
 import { getTimeSlotById } from "./timeSlot";
@@ -75,6 +77,22 @@ export const createOccupiedLocation = async (
   }
 };
 
+export const updateOccupiedLocation = async (
+  newOccupiedLocation: Omit<OccupiedLocation, "id">
+) => {
+  try {
+    await db
+      .update(occupiedLocation)
+      .set(newOccupiedLocation)
+      .where(
+        and(
+          eq(occupiedLocation.timeSlotId, newOccupiedLocation.timeSlotId),
+          eq(occupiedLocation.locationId, newOccupiedLocation.locationId)
+        )
+      );
+  } catch (error) {}
+};
+
 export const getOccupiedLocations = async () => {
   try {
     const result = await db.select().from(occupiedLocation);
@@ -85,9 +103,18 @@ export const getOccupiedLocations = async () => {
   }
 };
 
-export const deleteOccupiedLocation = async (id: number) => {
+export const deleteOccupiedLocation = async (
+  newOccupiedLocation: Omit<OccupiedLocation, "id">
+) => {
   try {
-    await db.delete(occupiedLocation).where(eq(occupiedLocation.id, id));
+    await db
+      .delete(occupiedLocation)
+      .where(
+        and(
+          eq(occupiedLocation.timeSlotId, newOccupiedLocation.timeSlotId),
+          eq(occupiedLocation.locationId, newOccupiedLocation.locationId)
+        )
+      );
   } catch (error) {
     console.error("Error deleting occupied location:", error);
     throw error;
@@ -104,7 +131,7 @@ export const getFreeLocations = async (timeSlotId: number) => {
 
     // Extract occupied location IDs
     const occupiedLocationIds = occupiedLocations.map(
-      (location) => location.id
+      (location) => location.locationId
     );
 
     // Fetch locations being used in exams for the given time slot
@@ -207,6 +234,102 @@ export const reserveLocationsForModule = async (
     await db.insert(monitoring).values(monitorings);
   } catch (error) {
     console.error("Error creating monitorings:", error);
+    throw error;
+  }
+};
+
+export interface OccupationCalendar {
+  date: string;
+  timeSlots: CalendarTimeSlots[];
+}
+
+export type CalendarTimeSlots = Omit<TimeSlot, "date" | "sessionExamId"> & {
+  cause: string | null;
+};
+/**
+ *
+ * @param sessionId
+ * @param locationId
+ * @returns Promise<OccupationCalendar[]>
+ * Get the location's occupation calendar
+ */
+export const getLocationCalendar = async (
+  sessionId: number,
+  locationId: number
+): Promise<OccupationCalendar[]> => {
+  try {
+    const timeSlots = db
+      .select({
+        id: timeSlot.id,
+        date: timeSlot.date,
+        period: timeSlot.period,
+        timePeriod: timeSlot.timePeriod,
+      })
+      .from(timeSlot)
+      .where(eq(timeSlot.sessionExamId, sessionId))
+      .as("timeSlots");
+
+    const locationCalendar = await db
+      .select({
+        id: timeSlots.id,
+        date: timeSlots.date,
+        period: timeSlots.period,
+        timePeriod: timeSlots.timePeriod,
+        cause: occupiedLocation.cause,
+      })
+      .from(timeSlots)
+      .leftJoin(occupiedLocation, eq(timeSlots.id, occupiedLocation.timeSlotId))
+
+      .where(
+        or(
+          eq(occupiedLocation.locationId, locationId),
+          isNull(occupiedLocation.locationId)
+        )
+      );
+
+    const monitoringLocations = await db
+      .select({
+        locationId: monitoring.locationId,
+        timeSlotId: exam.timeSlotId,
+      })
+      .from(monitoring)
+      .innerJoin(exam, eq(monitoring.examId, exam.id))
+      .leftJoin(timeSlots, eq(exam.timeSlotId, timeSlots.id))
+      .where(eq(monitoring.locationId, locationId));
+
+    const days = locationCalendar.reduce((acc, row) => {
+      const dateKey = row.date.toISOString().split("T")[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = { date: dateKey, timeSlots: [] };
+      }
+
+      const currentSlots = acc[dateKey].timeSlots;
+
+      currentSlots.push({
+        id: row.id,
+        period: row.period,
+        timePeriod: row.timePeriod,
+        cause: row.cause,
+      });
+      return acc;
+    }, {} as Record<string, OccupationCalendar>);
+    const result = Object.values(days).map((day) => ({
+      date: day.date,
+      timeSlots: day.timeSlots.map((timeSlot) => {
+        const monitoringExist = monitoringLocations.some(
+          (monitoring) => monitoring.timeSlotId === timeSlot.id
+        );
+        return {
+          id: timeSlot.id,
+          period: timeSlot.period,
+          timePeriod: timeSlot.timePeriod,
+          cause: monitoringExist ? "Exam" : timeSlot.cause,
+        };
+      }),
+    }));
+    return result;
+  } catch (error) {
+    console.error("Error fetching days with time slots:", error);
     throw error;
   }
 };

@@ -135,3 +135,15 @@ export const RegisterSchema = z.object({
 export const sessionsSchema = z.object({
   type: z.enum(["validate", "cancel"]),
 });
+
+export const occupiedTeacherSchema = z.object({
+  cause: z.string().min(1, {
+    message: "La cause est requise.",
+  }),
+});
+
+export const occupiedLocationSchema = z.object({
+  cause: z.string().min(1, {
+    message: "La cause est requise.",
+  }),
+});

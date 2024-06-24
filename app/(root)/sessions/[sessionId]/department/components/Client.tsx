@@ -6,16 +6,24 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { useModal } from "@/hooks/useModalStore";
 import { Plus } from "lucide-react";
-import { columns } from "./Columns";
+
 import { Department } from "@/lib/schema";
+import { columns } from "./Columns";
 
 interface DepartmentClientProps {
   data: Department[];
+  sessionId: string;
 }
 
-export const DepartmentClient: React.FC<DepartmentClientProps> = ({ data }) => {
+export const DepartmentClient: React.FC<DepartmentClientProps> = ({
+  data,
+  sessionId,
+}) => {
   const { onOpen } = useModal();
-
+  const tableColumns = columns({
+    sessionId: parseInt(sessionId),
+    departments: data,
+  });
   return (
     <>
       <div className="flex items-center justify-between">
@@ -28,7 +36,7 @@ export const DepartmentClient: React.FC<DepartmentClientProps> = ({ data }) => {
         </Button>
       </div>
       <Separator />
-      <DataTable searchKey="name" columns={columns} data={data} />
+      <DataTable searchKey="name" columns={tableColumns} data={data} />
     </>
   );
 };
