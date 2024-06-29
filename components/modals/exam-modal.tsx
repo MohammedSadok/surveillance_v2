@@ -33,9 +33,16 @@ import { getDepartments } from "@/data/departement";
 import { createExam } from "@/data/exam";
 import { getFreeLocations } from "@/data/location";
 import { getModulesForExam, getNumberOfStudentsInModule } from "@/data/modules";
+import { getOptionsForExam } from "@/data/option";
 import { getFreeTeachersByDepartment } from "@/data/teacher";
 import { useModal } from "@/hooks/useModalStore";
-import { Department, LocationType, ModuleType, Teacher } from "@/lib/schema";
+import {
+  Department,
+  LocationType,
+  ModuleType,
+  Option,
+  Teacher,
+} from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { ExamSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -61,7 +68,8 @@ const ExamModal = () => {
   const { isOpen, onClose, type, data } = useModal();
   const { exam } = data;
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [modules, setModules] = useState<Omit<ModuleType, "optionId">[]>([]);
+  const [modules, setModules] = useState<ModuleType[]>([]);
+  const [options, setOptions] = useState<Option[]>([]);
   const [locations, setLocations] = useState<LocationType[]>([]);
   const [department, setDepartment] = useState<number | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -152,8 +160,8 @@ const ExamModal = () => {
     const fetchData = async () => {
       try {
         if (params.timeSlotId) {
-          const modules = await getModulesForExam(parseInt(params.timeSlotId));
-          setModules(modules);
+          const options = await getOptionsForExam(parseInt(params.timeSlotId));
+          setOptions(options);
         }
       } catch (error) {
         console.error("Erreur lors de la sélection des modules :", error);
@@ -163,22 +171,40 @@ const ExamModal = () => {
     fetchData();
   }, [exam, form, params.timeSlotId, isOpen]);
   const moduleId = form.watch("moduleId");
+  const optionId = form.watch("optionId");
   useEffect(() => {
     const fetchData = async () => {
       try {
         const number = await getNumberOfStudentsInModule(
           moduleId,
+          optionId,
           parseInt(params.sessionId)
         );
         setStudentNumber(number);
         form.setValue("locations", []);
       } catch (error) {
-        console.error("Erreur lors de la sélection des enseignants :", error);
+        console.error("Erreur lors de la sélection des étudiants :", error);
       }
     };
     if ((params.sessionId, moduleId)) fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId, params.sessionId]);
+  useEffect(() => {
+    console.log("fetch modules");
+    const fetchData = async () => {
+      try {
+        const modules = await getModulesForExam(
+          parseInt(params.timeSlotId),
+          form.getValues("optionId")
+        );
+        setModules(modules);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des modules :", error);
+      }
+    };
+    if (optionId) fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [optionId]);
 
   const isLoading = form.formState.isSubmitting;
 
@@ -308,6 +334,65 @@ const ExamModal = () => {
 
               <FormField
                 control={form.control}
+                name="optionId"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col w-full">
+                    <FormLabel>Option</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value
+                              ? options.find(
+                                  (option) => option.id === field.value
+                                )?.name
+                              : "Select option"}
+                            <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Chércher l'option..." />
+                          <CommandEmpty>No option found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                              {options.map((option) => (
+                                <CommandItem
+                                  value={option.name}
+                                  key={option.id}
+                                  onSelect={() => {
+                                    form.setValue("optionId", option.id);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      option.id === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {option.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="moduleId"
                 render={({ field }) => (
                   <FormItem className="flex flex-col w-full">
@@ -365,6 +450,7 @@ const ExamModal = () => {
                   </FormItem>
                 )}
               />
+
               {form.watch("moduleId") && (
                 <FormField
                   control={form.control}

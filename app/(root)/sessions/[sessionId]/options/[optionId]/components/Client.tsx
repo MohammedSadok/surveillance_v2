@@ -34,7 +34,7 @@ export const ModulesClient: React.FC<ModulesClientProps> = ({
           title={`Modules (${data.length})`}
           description="Gérer les modules"
         />
-        <Button onClick={() => onOpen("createSession")}>
+        <Button onClick={() => onOpen("createModule")}>
           <Plus className="mr-2 h-4 w-4" /> Ajouter un noveau module
         </Button>
       </div>

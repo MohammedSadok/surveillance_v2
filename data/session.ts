@@ -50,7 +50,10 @@ export const getUserById = async (id: number) => {
 };
 
 export const gestSessions = async () => {
-  const result = await db.select().from(sessionExam);
+  const result = await db
+    .select()
+    .from(sessionExam)
+    .orderBy(desc(sessionExam.id));
   return result;
 };
 export const gestSessionById = async (sessionId: number) => {

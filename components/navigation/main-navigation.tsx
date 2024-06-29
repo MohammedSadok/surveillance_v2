@@ -49,7 +49,7 @@ export function MainNav({ sessionId }: SidebarProps) {
           <span
             className={cn(
               "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              path === `/sessions/${sessionId}/exams`
+              path.includes(`/sessions/${sessionId}/exams`)
                 ? "bg-accent"
                 : "transparent"
             )}
@@ -62,7 +62,7 @@ export function MainNav({ sessionId }: SidebarProps) {
           <span
             className={cn(
               "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              path === `/sessions/${sessionId}/surveillance`
+              path.includes(`/sessions/${sessionId}/surveillance`)
                 ? "bg-accent"
                 : "transparent"
             )}
@@ -76,7 +76,7 @@ export function MainNav({ sessionId }: SidebarProps) {
           <span
             className={cn(
               "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              path === `/sessions/${sessionId}/schedule`
+              path.includes(`/sessions/${sessionId}/schedule`)
                 ? "bg-accent"
                 : "transparent"
             )}
@@ -89,7 +89,7 @@ export function MainNav({ sessionId }: SidebarProps) {
           <span
             className={cn(
               "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              path === `/sessions/${sessionId}/options`
+              path.includes(`/sessions/${sessionId}/options`)
                 ? "bg-accent"
                 : "transparent"
             )}
@@ -103,7 +103,7 @@ export function MainNav({ sessionId }: SidebarProps) {
           <span
             className={cn(
               "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              path === `/sessions/${sessionId}/department`
+              path.includes(`/sessions/${sessionId}/department`)
                 ? "bg-accent"
                 : "transparent"
             )}
@@ -116,7 +116,7 @@ export function MainNav({ sessionId }: SidebarProps) {
           <span
             className={cn(
               "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              path === `/sessions/${sessionId}/locaux`
+              path.includes(`/sessions/${sessionId}/locaux`)
                 ? "bg-accent"
                 : "transparent"
             )}

@@ -73,6 +73,12 @@ export const exam = mysqlTable("exam", {
       onUpdate: "cascade",
     })
     .notNull(),
+  optionId: varchar("option", { length: 20 })
+    .references(() => option.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
+    .notNull(),
   timeSlotId: int("timeSlotId")
     .references(() => timeSlot.id, {
       onDelete: "cascade",

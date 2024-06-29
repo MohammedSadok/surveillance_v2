@@ -33,6 +33,17 @@ export const getOptions = async (): Promise<Option[]> => {
     throw error;
   }
 };
+export const getOptionsForExam = async (
+  timeSlotId: number
+): Promise<Option[]> => {
+  try {
+    const result = await db.select().from(option);
+    return result;
+  } catch (error) {
+    console.error("Error fetching options:", error);
+    throw error;
+  }
+};
 
 export const getOptionById = async (id: string) => {
   const result = await db.query.option.findFirst({
@@ -44,7 +55,7 @@ export const updateOption = async (updateOption: Option) => {
   try {
     await db
       .update(option)
-      .set(updateOption)
+      .set({ name: updateOption.name })
       .where(eq(option.id, updateOption.id));
   } catch (error) {
     console.error("Error updating option:", error);
@@ -117,7 +128,7 @@ export const generateStudentsExamOptionSchedule = async (
   optionId: string
 ): Promise<StudentWithExams[]> => {
   try {
-    const students = await db
+    const students = db
       .select()
       .from(student)
       .where(
@@ -128,7 +139,7 @@ export const generateStudentsExamOptionSchedule = async (
       )
       .as("students");
 
-    const exams = await db
+    const exams = db
       .select({
         id: exam.id,
         moduleId: exam.moduleId,

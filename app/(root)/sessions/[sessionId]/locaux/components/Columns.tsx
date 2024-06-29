@@ -4,12 +4,10 @@ import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { CellAction } from "./CellAction";
 interface ColumnsProps {
-  sessionId: number;
-  locations: LocationType[];
+  sessionId: string;
 }
 export const columns = ({
   sessionId,
-  locations,
 }: ColumnsProps): ColumnDef<LocationType>[] => [
   {
     accessorKey: "name",

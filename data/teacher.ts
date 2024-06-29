@@ -11,7 +11,7 @@ import {
   timeSlot,
   TimeSlot,
 } from "@/lib/schema";
-import { and, count, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
+import { and, count, eq, inArray, notInArray } from "drizzle-orm";
 import {
   DayWithTimeSlotIds,
   getTimeSlotById,
@@ -26,7 +26,6 @@ export const createTeacher = async (newTeacher: Omit<Teacher, "id">) => {
     throw error;
   }
 };
-
 export const getTeachersInDepartment = async (
   departmentId: number
 ): Promise<Teacher[]> => {

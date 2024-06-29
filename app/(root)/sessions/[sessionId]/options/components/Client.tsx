@@ -31,7 +31,7 @@ export const OptionsClient: React.FC<OptionsClientProps> = ({
           title={`Options (${data.length})`}
           description="Gérer les Options"
         />
-        <Button onClick={() => onOpen("createSession")}>
+        <Button onClick={() => onOpen("createOption")}>
           <Plus className="mr-2 h-4 w-4" /> Ajouter une nouvelle option
         </Button>
       </div>

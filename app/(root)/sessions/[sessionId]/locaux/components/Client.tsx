@@ -20,7 +20,6 @@ export const LocationClient: React.FC<LocationClientProps> = ({
   const { onOpen } = useModal();
   const tableColumns = columns({
     sessionId,
-    locations: data,
   });
   return (
     <>

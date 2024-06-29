@@ -6,7 +6,6 @@ import { SessionClient } from "./components/Client";
 
 const SessionsPage = async () => {
   const sessions = await gestSessions();
-
   return (
     <div className="flex flex-col space-y-2">
       <header className="sticky top-0 z-40 border-b bg-background">

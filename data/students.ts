@@ -5,17 +5,16 @@ import {
   LocationType,
   moduleOption,
   moduleTable,
-  ModuleType,
   monitoring,
-  Option,
   option,
   student,
   studentExamLocation,
   StudentType,
-  timeSlot,
 } from "@/lib/schema";
 import { GroupedData } from "@/lib/utils";
 import { and, eq } from "drizzle-orm";
+import { createModule } from "./modules";
+import { createOption } from "./option";
 
 export const insertStudents = async (students: Omit<StudentType, "id">[]) => {
   await db.insert(student).values(students);
@@ -30,14 +29,6 @@ export const updateStudent = async (newStudent: StudentType) => {
 
 export const deleteStudent = async (id: number) => {
   await db.delete(student).where(eq(student.id, id));
-};
-
-export const insertOption = async (newOption: Option) => {
-  await db.insert(option).values(newOption);
-};
-
-export const insertModule = async (newModule: ModuleType) => {
-  await db.insert(moduleTable).values(newModule);
 };
 
 export const getStudents = async (
@@ -98,7 +89,7 @@ export const insertOptionsAndModules = async (
     if (optionsAndModules.hasOwnProperty(optionId)) {
       const existOption = await getOptionById(optionId);
       if (!existOption) {
-        await insertOption({
+        await createOption({
           id: optionId,
           name: optionsAndModules[optionId].name,
         });
@@ -107,7 +98,7 @@ export const insertOptionsAndModules = async (
         if (optionsAndModules[optionId].modules.hasOwnProperty(moduleId)) {
           const existModule = await getModuleById(moduleId);
           if (!existModule) {
-            await insertModule({
+            await createModule({
               id: moduleId,
               name: optionsAndModules[optionId].modules[moduleId].name,
             });
@@ -169,11 +160,6 @@ export const getStudentsPassExam = async (
         eq(monitoring.examId, selectedExam.examId)
       )
     );
-
-  // Fetch exam time slot
-  const examTimeSlot = await db.query.timeSlot.findFirst({
-    where: eq(timeSlot.id, selectedExam.timeSlotId),
-  });
 
   // Fetch students
   const students = await db

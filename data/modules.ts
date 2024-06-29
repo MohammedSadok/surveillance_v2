@@ -9,13 +9,52 @@ import {
   StudentType,
   timeSlot,
 } from "@/lib/schema";
-import { and, eq, notInArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getTimeSlotById } from "./timeSlot";
 /**
  *
  * @returns Promise<ModuleType[]>
  * Return all modules in the database
  */
+
+export const createModule = async (
+  newModule: ModuleType,
+  optionId?: string
+) => {
+  try {
+    await db.insert(moduleTable).values(newModule);
+    if (optionId) {
+      await db.insert(moduleOption).values({
+        moduleId: newModule.id,
+        optionId,
+      });
+    }
+  } catch (error) {
+    console.error("Error creating module:", error);
+    throw error;
+  }
+};
+export const updateModule = async (newModule: ModuleType) => {
+  try {
+    await db
+      .update(moduleTable)
+      .set({ name: newModule.name })
+      .where(eq(moduleTable.id, newModule.id));
+  } catch (error) {
+    console.error("Error updating module:", error);
+    throw error;
+  }
+};
+
+export const deleteModule = async (moduleId: string) => {
+  try {
+    await db.delete(moduleTable).where(eq(moduleTable.id, moduleId));
+  } catch (error) {
+    console.error("Error deleting module:", error);
+    throw error;
+  }
+};
+
 export const getModules = async (): Promise<Omit<ModuleType, "optionId">[]> => {
   const result = await db
     .selectDistinct({ id: moduleTable.id, name: moduleTable.name })
@@ -32,13 +71,18 @@ export const getModules = async (): Promise<Omit<ModuleType, "optionId">[]> => {
  */
 export const getNumberOfStudentsInModule = async (
   moduleId: string,
+  optionId: string,
   sessionId: number
 ): Promise<number> => {
   const result = await db
     .select()
     .from(student)
     .where(
-      and(eq(student.moduleId, moduleId), eq(student.sessionExamId, sessionId))
+      and(
+        eq(student.moduleId, moduleId),
+        eq(student.sessionExamId, sessionId),
+        eq(student.optionId, optionId)
+      )
     );
   return result.length;
 };
@@ -50,8 +94,9 @@ export const getNumberOfStudentsInModule = async (
  * @returns Promise<StudentType[]>
  * Return all students in a module
  */
-export const getStudentsInModule = async (
+export const getStudentsInModuleAndOption = async (
   moduleId: string,
+  optionId: string,
   sessionExamId: number
 ): Promise<StudentType[]> => {
   const result = await db
@@ -60,6 +105,7 @@ export const getStudentsInModule = async (
     .where(
       and(
         eq(student.moduleId, moduleId),
+        eq(student.optionId, optionId),
         eq(student.sessionExamId, sessionExamId)
       )
     );
@@ -106,16 +152,13 @@ export const getOptionIdsWithExamsInTimeSlot = async (
  * @returns Promise<ModuleType[]>
  * Return all modules that have an exam in a specific time slot
  */
-export const getModulesAlreadyHaveExam = async (
-  sessionExamId: number
-): Promise<ModuleType[]> => {
+export const getModulesAlreadyHaveExam = async (sessionExamId: number) => {
   const result = await db
     .select({
-      id: moduleTable.id,
-      name: moduleTable.name,
+      moduleId: exam.moduleId,
+      optionId: exam.optionId,
     })
-    .from(moduleTable)
-    .innerJoin(exam, eq(exam.moduleId, moduleTable.id))
+    .from(exam)
     .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
     .where(eq(timeSlot.sessionExamId, sessionExamId));
   return result;
@@ -128,61 +171,47 @@ export const getModulesAlreadyHaveExam = async (
  * Return all modules that don't have an exam in a specific time slot
  */
 export const getModulesForExam = async (
-  timeSlotId: number
+  timeSlotId: number,
+  optionId: string
 ): Promise<ModuleType[]> => {
   try {
-    // Get option IDs associated with exams in the specified time slot
-    const options = await getOptionIdsWithExamsInTimeSlot(timeSlotId);
-
     // Get the current time slot details
     const selectedTimeSlot = await getTimeSlotById(timeSlotId);
 
-    // Initialize an array for module IDs that already have exams
-    let existingModuleIds: string[] = [];
-
     if (selectedTimeSlot) {
       // Get module IDs that already have exams in the same session but on different days
-      existingModuleIds = await getModulesAlreadyHaveExam(
+      const existingModules = await getModulesAlreadyHaveExam(
         selectedTimeSlot.sessionExamId
-      ).then((modules) => modules.map((module) => module.id));
-    }
-
-    // Prepare the base query to fetch distinct modules
-    let query = db
-      .selectDistinct({
-        id: moduleTable.id,
-        name: moduleTable.name,
-      })
-      .from(moduleTable)
-      .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId));
-
-    let distinctModules: ModuleType[] = [];
-    // Apply the option filter only if there are options
-    if (options.length > 0) {
-      distinctModules = await db
+      );
+      const distinctModules = await db
         .selectDistinct({
-          id: moduleTable.id,
+          moduleId: moduleTable.id,
           name: moduleTable.name,
+          optionId: moduleOption.optionId,
         })
         .from(moduleTable)
         .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
-        .where(notInArray(moduleOption.optionId, options));
-    } else {
-      distinctModules = await db
-        .selectDistinct({
-          id: moduleTable.id,
-          name: moduleTable.name,
-        })
-        .from(moduleTable)
-        .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId));
+        .where(eq(moduleOption.optionId, optionId));
+
+      // Filter out modules that already have exams in the same session but on different days
+      const result = distinctModules.filter((module) => {
+        return !existingModules.some(
+          (existingModule) =>
+            existingModule.moduleId === module.moduleId &&
+            existingModule.optionId === module.optionId
+        );
+      });
+
+      const data = result.map((module) => {
+        return {
+          id: module.moduleId,
+          name: module.name,
+        };
+      });
+
+      return data;
     }
-
-    // Filter out modules that already have exams in the same session but on different days
-    const result = distinctModules.filter(
-      (module) => !existingModuleIds.includes(module.id)
-    );
-
-    return result;
+    return [];
   } catch (error) {
     console.error(
       "Erreur lors de la récupération des modules pour l'examen:",

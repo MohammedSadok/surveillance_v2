@@ -16,7 +16,7 @@ import {
   getFreeLocationsForModule,
   reserveLocationsForModule,
 } from "./location";
-import { getStudentsInModule } from "./modules";
+import { getStudentsInModuleAndOption } from "./modules";
 import { createOccupiedTeacherInPeriod } from "./teacher";
 import { getTimeSlotById, getTimeSlotsInSameDayAndPeriod } from "./timeSlot";
 export interface ExamLocation {
@@ -37,11 +37,13 @@ export const createExam = async (newExam: ExamType) => {
       } else {
         locations = await getFreeLocationsForModule(
           newExam.moduleId,
+          newExam.optionId,
           newExam.timeSlotId
         );
       }
-      const students = await getStudentsInModule(
+      const students = await getStudentsInModuleAndOption(
         newExam.moduleId,
+        newExam.optionId,
         selectedTimeSlot.sessionExamId
       );
 
@@ -89,6 +91,7 @@ export const getExams = async (sessionExamId: number): Promise<Exam[]> => {
     return await db
       .select({
         id: exam.id,
+        optionId: exam.optionId,
         moduleId: exam.moduleId,
         timeSlotId: exam.timeSlotId,
         responsibleId: exam.responsibleId,
@@ -177,6 +180,7 @@ export const getExamsWithDetailsAndCounts = async (
         moduleName: moduleTable.name,
         responsibleName: teacher.lastName,
         timeSlotId: exam.timeSlotId,
+        optionId: exam.optionId,
         studentCount: sql<number>`count(${student.id})`.mapWith(Number),
       })
       .from(exam)
@@ -186,7 +190,8 @@ export const getExamsWithDetailsAndCounts = async (
         student,
         and(
           eq(student.sessionExamId, selectedTimeSlot.sessionExamId),
-          eq(student.moduleId, exam.moduleId)
+          eq(student.moduleId, exam.moduleId),
+          eq(student.optionId, exam.optionId)
         )
       )
       .where(eq(exam.timeSlotId, timeSlotId))

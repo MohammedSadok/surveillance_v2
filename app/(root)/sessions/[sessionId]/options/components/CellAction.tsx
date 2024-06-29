@@ -31,7 +31,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       await deleteOption(data.id);
-      toast.success("Département supprimé.");
+      toast.success("Option supprimé.");
       router.refresh();
     } catch (error) {
       toast.error("Error dans la suppresion de l'option !");
@@ -58,11 +58,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          {/* <DropdownMenuItem
-            onClick={() => onOpen("", { Option: data })}
+          <DropdownMenuItem
+            onClick={() => onOpen("updateOption", { option: data })}
           >
             <Edit className="mr-2 h-4 w-4" /> Modifier
-          </DropdownMenuItem> */}
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen(true)}>
             <Trash className="mr-2 h-4 w-4" /> Supprimer
           </DropdownMenuItem>

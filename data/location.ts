@@ -177,6 +177,7 @@ export const getFreeLocations = async (timeSlotId: number) => {
 
 export const getFreeLocationsForModule = async (
   moduleId: string,
+  optionId: string,
   timeSlotId: number
 ) => {
   try {
@@ -186,6 +187,7 @@ export const getFreeLocationsForModule = async (
     if (timeSlot !== null) {
       studentsRemaining = await getNumberOfStudentsInModule(
         moduleId,
+        optionId,
         timeSlot.sessionExamId
       );
     }

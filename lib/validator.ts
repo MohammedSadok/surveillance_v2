@@ -35,6 +35,27 @@ export const SessionSchema = z.object({
   afternoonSession2: TimeRangeSchema,
 });
 
+export const LoadStudentSchema = z.object({
+  urlFile: z.instanceof(File).nullable(),
+});
+
+export const optionSchema = z.object({
+  id: z.string().min(3, {
+    message: "L'identifiant doit contenir au moins 3 caractères.",
+  }),
+  name: z.string().min(3, {
+    message: "Le nom doit contenir au moins 3 caractères.",
+  }),
+});
+export const moduleSchema = z.object({
+  id: z.string().min(3, {
+    message: "L'identifiant doit contenir au moins 3 caractères.",
+  }),
+  name: z.string().min(3, {
+    message: "Le nom doit contenir au moins 3 caractères.",
+  }),
+});
+
 export const DepartmentSchema = z.object({
   name: z.string().min(3, {
     message: "Le nom doit contenir au moins 3 caractères.",
@@ -83,11 +104,6 @@ export const LocationSchema = z.object({
   }),
 });
 
-const StudentSchema = z.object({
-  number: z.number(),
-  firstName: z.string(),
-  lastName: z.string(),
-});
 const LocationExamSchema = z.object({
   id: z.number().int().min(1, {
     message: "L'identifiant de la locale est requis.",
@@ -99,6 +115,9 @@ const LocationExamSchema = z.object({
 export const ExamSchema = z.object({
   moduleId: z.string().min(1, {
     message: "Le module est requis",
+  }),
+  optionId: z.string().min(1, {
+    message: "L'option est requis",
   }),
   responsibleId: z.number().int().min(1, {
     message: "Le responsable du module est requis.",

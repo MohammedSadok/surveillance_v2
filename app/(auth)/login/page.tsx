@@ -16,7 +16,7 @@ export default function AuthenticationPage() {
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
         <div className="absolute inset-0 bg-zinc-900"></div>
 
-        <div className="w-full h-1/2 relative mt-auto">
+        <div className="w-full h-1/2 relative m-auto">
           <Image
             src={scheduleImage}
             fill={true}

@@ -103,7 +103,7 @@ const SessionModal = () => {
             await Promise.all(
               studentChunks.map((chunk) => insertStudentsChunk(chunk, id))
             );
-            router.push(`/sessions/${id}`);
+            router.refresh();
             onClose();
             setIsLoading(false);
           }
