@@ -35,7 +35,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       router.refresh();
     } catch (error) {
       toast.error(
-        "Assurez-vous d'avoir d'abord supprimé toutes les données de cette session."
+        "Une erreur est survenue lors de la suppression de la session"
       );
     } finally {
       setOpen(false);
@@ -55,6 +55,13 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         onClose={() => setOpen(false)}
         onConfirm={() => action && performAction(action)}
         loading={loading}
+        title={
+          action === "delete"
+            ? "Êtes-vous sûr de vouloir supprimer cette session ?"
+            : action === "validate"
+            ? "Êtes-vous sûr de vouloir valider cette session ?"
+            : "Êtes-vous sûr de vouloir annuler cette session ?"
+        }
       />
 
       <Button variant="ghost" onClick={() => handleButtonClick("delete")}>

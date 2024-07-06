@@ -37,7 +37,7 @@ export const StudentClient: React.FC<StudentClientProps> = ({
           title={`Étudiants (${data.length})`}
           description={`Gérer les étudiants de l'option ${option.name} du module ${module.name}`}
         />
-        <div className="space-x-2">
+        <div className="md:flex-row flex flex-col justify-center items-center gap-2  ">
           <Button onClick={() => onOpen("loadStudents")}>
             <Plus className="mr-2 h-4 w-4" /> charger des étudiants
           </Button>

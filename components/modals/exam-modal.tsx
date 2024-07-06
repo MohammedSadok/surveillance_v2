@@ -198,6 +198,7 @@ const ExamModal = () => {
           form.getValues("optionId")
         );
         setModules(modules);
+        setStudentNumber(0);
       } catch (error) {
         console.error("Erreur lors de la récupération des modules :", error);
       }
@@ -293,13 +294,13 @@ const ExamModal = () => {
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0">
                             <Command>
-                              <CommandInput placeholder="Search language..." />
-                              <CommandEmpty>No language found.</CommandEmpty>
+                              <CommandInput placeholder="Search teacher..." />
+                              <CommandEmpty>No teacher found.</CommandEmpty>
                               <CommandList>
                                 <CommandGroup>
                                   {teachers.map((teacher) => (
                                     <CommandItem
-                                      value={teacher.id + ""}
+                                      value={teacher.lastName} // Use teacher's last name for value
                                       key={teacher.id}
                                       onSelect={() => {
                                         form.setValue(

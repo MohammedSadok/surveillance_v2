@@ -12,7 +12,7 @@ const TimeRangeSchema = z
   });
 
 export const SessionSchema = z.object({
-  urlFile: z.instanceof(File).nullable(),
+  urlFile: z.instanceof(File).optional(),
   type: z.string({
     message: "Veuillez sélectionner un type pour la session d'examens.",
   }),

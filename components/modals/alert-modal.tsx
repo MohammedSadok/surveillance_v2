@@ -9,6 +9,7 @@ interface AlertModalProps {
   onClose: () => void;
   onConfirm: () => void;
   loading: boolean;
+  title?: string;
 }
 
 export const AlertModal: React.FC<AlertModalProps> = ({
@@ -16,6 +17,7 @@ export const AlertModal: React.FC<AlertModalProps> = ({
   onClose,
   onConfirm,
   loading,
+  title,
 }) => {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -29,7 +31,7 @@ export const AlertModal: React.FC<AlertModalProps> = ({
 
   return (
     <Modal
-      title="Êtes-vous sûr ?"
+      title={title ? title : "Êtes-vous sûr?"}
       description="Cette action ne peut pas être annulée."
       isOpen={isOpen}
       onClose={onClose}

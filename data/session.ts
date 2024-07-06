@@ -25,7 +25,10 @@ import {
   insertMonitoringLines,
   LocationMonitoring,
 } from "./monitoring";
-import { getFreeTeachersInSameDayAndCountMonitoring } from "./teacher";
+import {
+  getFreeTeachersForReservist,
+  getFreeTeachersInSameDayAndCountMonitoring,
+} from "./teacher";
 import { DayWithTimeSlotIds, getDaysWithTimeSlots } from "./timeSlot";
 
 export const LoginUser = async (email: string, password: string) => {
@@ -262,8 +265,9 @@ export const validateSession = async (sessionId: number) => {
   const daysWithTimeSlots = await getDaysWithTimeSlots(sessionId);
   for (const day of daysWithTimeSlots) {
     let monitoringLines: Omit<MonitoringLine, "id">[] = [];
-    let { idsForMonitoring, idsForReservist } =
-      await getFreeTeachersInSameDayAndCountMonitoring(day);
+    let idsForMonitoring = await getFreeTeachersInSameDayAndCountMonitoring(
+      day
+    );
 
     const { monitoringInAfternoon, monitoringInMorning } =
       await getMonitoringInDate(day);
@@ -294,7 +298,11 @@ export const validateSession = async (sessionId: number) => {
       await processLocations(monitoringInAfternoon);
     if (monitoringLines.length > 0)
       await insertMonitoringLines(monitoringLines);
-    await assignReservistTeachersForDay(idsForReservist, day);
+  }
+  for (const day of daysWithTimeSlots) {
+    const idsForReservist = await getFreeTeachersForReservist(day);
+    if (idsForReservist)
+      await assignReservistTeachersForDay(idsForReservist, day);
   }
   await db
     .update(sessionExam)

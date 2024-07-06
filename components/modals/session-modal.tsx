@@ -76,41 +76,50 @@ const SessionModal = () => {
       };
 
       const file = values.urlFile as File;
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const target = event?.target;
-        if (target instanceof FileReader) {
-          const binaryString = target.result as string;
-          const workbook = read(binaryString, { type: "binary" });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const fileData: any[] = utils.sheet_to_json(sheet, { header: 1 });
-          const fileColumns = fileData[0];
-          if (
-            fileColumns.length !== expectedColumns.length ||
-            !fileColumns.every(
-              (col: string, index: number) => col === expectedColumns[index]
-            )
-          ) {
-            toast.error("Le fichier ne correspond pas au format attendu.");
-            setIsLoading(false);
-            return;
-          } else {
-            const students = fileData.slice(1);
-            const id = await createSession(data);
-            const optionsAndModules = groupData(students);
-            const studentChunks = transformData(students, id);
-            await insertOptionsAndModules(optionsAndModules);
-            await Promise.all(
-              studentChunks.map((chunk) => insertStudentsChunk(chunk, id))
-            );
-            router.refresh();
-            onClose();
-            setIsLoading(false);
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          const target = event?.target;
+          if (target instanceof FileReader) {
+            const binaryString = target.result as string;
+            const workbook = read(binaryString, { type: "binary" });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const fileData: any[] = utils.sheet_to_json(sheet, { header: 1 });
+            const fileColumns = fileData[0];
+            if (
+              fileColumns.length !== expectedColumns.length ||
+              !fileColumns.every(
+                (col: string, index: number) => col === expectedColumns[index]
+              )
+            ) {
+              toast.error("Le fichier ne correspond pas au format attendu.");
+              setIsLoading(false);
+              return;
+            } else {
+              const students = fileData.slice(1);
+              const id = await createSession(data);
+              const optionsAndModules = groupData(students);
+              const studentChunks = transformData(students, id);
+              await insertOptionsAndModules(optionsAndModules);
+              await Promise.all(
+                studentChunks.map((chunk) => insertStudentsChunk(chunk, id))
+              );
+              form.reset();
+              router.refresh();
+              onClose();
+              setIsLoading(false);
+            }
           }
-        }
-      };
+        };
 
-      reader.readAsArrayBuffer(file);
+        reader.readAsArrayBuffer(file);
+      } else {
+        await createSession(data);
+        form.reset();
+        router.refresh();
+        onClose();
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error(error);
       toast.error("An error occurred while processing the form.");
@@ -290,7 +299,7 @@ const SessionModal = () => {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         form.setValue(
                           "urlFile",
-                          e.target.files ? e.target.files[0] : null
+                          e.target.files ? e.target.files[0] : undefined
                         );
                       }}
                     />
