@@ -93,7 +93,7 @@ const OccupiedLocationModal = () => {
                 name="cause"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>La cause de l`&apos;`occupation</FormLabel>
+                    <FormLabel>La cause de l&apos;occupation</FormLabel>
 
                     <Input
                       disabled={isLoading}

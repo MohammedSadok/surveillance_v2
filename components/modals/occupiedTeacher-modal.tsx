@@ -93,7 +93,7 @@ const OccupiedTeacherModal = () => {
                 name="cause"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>La cause de l`&apos;`occupation</FormLabel>
+                    <FormLabel>La cause de l&apos;occupation</FormLabel>
 
                     <Input
                       disabled={isLoading}
@@ -128,7 +128,7 @@ const OccupiedTeacherModal = () => {
               <Button disabled={isLoading}>
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : type === "createOccupiedLocation" ? (
+                ) : type === "createOccupiedTeacher" ? (
                   "Creér"
                 ) : (
                   "Modifier"

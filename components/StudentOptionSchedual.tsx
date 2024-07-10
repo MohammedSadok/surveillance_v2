@@ -202,7 +202,7 @@ const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
                       className="border text-center text-xs p-0.2"
                     >
                       {exam
-                        ? exam.locationName + " N : " + exam.numberOfStudent
+                        ? exam.locationName + " - N°" + exam.numberOfStudent
                         : null}
                     </TableCell>
                   );

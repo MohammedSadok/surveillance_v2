@@ -8,6 +8,13 @@
       "when": 1719666051303,
       "tag": "0000_elite_war_machine",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1720612945087,
+      "tag": "0001_huge_cloak",
+      "breakpoints": true
     }
   ]
 }

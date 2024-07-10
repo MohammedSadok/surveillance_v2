@@ -1,0 +1,1 @@
+ALTER TABLE `exam` MODIFY COLUMN `responsibleId` int;

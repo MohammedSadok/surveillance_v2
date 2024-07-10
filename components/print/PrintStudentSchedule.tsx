@@ -56,12 +56,9 @@ const PrintStudentSchedule = ({
                   key={module.id}
                   className="border text-center text-xs p-0.2"
                 >
-                  {exam ? exam.locationName : null}
-                  {exam && (
-                    <span className="text-[10px] text-gray-700">
-                      {" N: " + exam.numberOfStudent}
-                    </span>
-                  )}
+                  {exam
+                    ? exam.locationName + " - N°" + exam.numberOfStudent
+                    : null}
                 </TableCell>
               );
             })}

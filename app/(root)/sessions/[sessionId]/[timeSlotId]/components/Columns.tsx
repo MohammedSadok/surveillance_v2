@@ -20,6 +20,10 @@ export const columns: ColumnDef<ExamWithDetails>[] = [
   {
     accessorKey: "responsibleName",
     header: "Responsable du module",
+    cell: ({ row }) =>
+      row.original.responsibleName === null
+        ? "Non spécifié"
+        : row.original.responsibleName,
   },
   {
     id: "actions",

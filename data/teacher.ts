@@ -10,6 +10,7 @@ import {
   Teacher,
   timeSlot,
   TimeSlot,
+  users,
 } from "@/lib/schema";
 import { and, count, eq, inArray, notInArray } from "drizzle-orm";
 import {
@@ -73,7 +74,25 @@ export const deleteTeacher = async (id: number): Promise<void> => {
     throw error;
   }
 };
+export const getTeachers = async () => {
+  try {
+    const result = await db.select().from(teacher);
+    return result;
+  } catch (error) {
+    console.error("Error fetching teachers:", error);
+    throw error;
+  }
+};
 
+export const getUsers = async () => {
+  try {
+    const result = await db.select().from(users);
+    return result;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+};
 export const getFreeTeachersByDepartment = async (
   timeSlotId: number,
   departmentId: number

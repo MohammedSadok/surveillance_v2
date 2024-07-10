@@ -50,7 +50,10 @@ const TeacherSchedule: React.FC<ScheduleProps> = ({
                         timeSlotId: timeSlot.id,
                       },
                     });
-                  } else if (timeSlot.cause !== "TT") {
+                  } else if (
+                    timeSlot.cause !== "TT" &&
+                    timeSlot.cause != "RR"
+                  ) {
                     onOpen("updateOccupiedTeacher", {
                       occupiedTeacher: {
                         cause: timeSlot.cause,

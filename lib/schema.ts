@@ -85,12 +85,10 @@ export const exam = mysqlTable("exam", {
       onUpdate: "cascade",
     })
     .notNull(),
-  responsibleId: int("responsibleId")
-    .references(() => teacher.id, {
-      onDelete: "cascade",
-      onUpdate: "cascade",
-    })
-    .notNull(),
+  responsibleId: int("responsibleId").references(() => teacher.id, {
+    onDelete: "cascade",
+    onUpdate: "cascade",
+  }),
 });
 
 export const student = mysqlTable("student", {

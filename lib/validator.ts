@@ -119,9 +119,13 @@ export const ExamSchema = z.object({
   optionId: z.string().min(1, {
     message: "L'option est requis",
   }),
-  responsibleId: z.number().int().min(1, {
-    message: "Le responsable du module est requis.",
-  }),
+  responsibleId: z
+    .number()
+    .int()
+    .min(1, {
+      message: "Le responsable du module est requis.",
+    })
+    .optional(),
   timeSlotId: z.number().int().min(1, {
     message: "L'identifiant de l'intervalle de temps est requis.",
   }),

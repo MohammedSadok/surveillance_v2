@@ -190,7 +190,6 @@ const ExamModal = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId, params.sessionId]);
   useEffect(() => {
-    console.log("fetch modules");
     const fetchData = async () => {
       try {
         const modules = await getModulesForExam(
@@ -217,7 +216,12 @@ const ExamModal = () => {
         );
         return;
       }
-      if (type === "createExam") await createExam(values);
+      if (type === "createExam")
+        await createExam({
+          ...values,
+          responsibleId:
+            values.responsibleId === undefined ? null : values.responsibleId,
+        });
       form.reset();
       router.refresh();
       onClose();

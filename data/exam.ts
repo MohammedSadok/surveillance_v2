@@ -56,12 +56,6 @@ export const createExam = async (newExam: ExamType) => {
         locationId: number;
       }> = [];
       const createdExam = await db.insert(exam).values(newExam);
-      await createOccupiedTeacherInPeriod({
-        teacherId: newExam.responsibleId,
-        cause: "TT",
-        timeSlotId: newExam.timeSlotId,
-      });
-
       for (const location of locations) {
         for (
           let i = 0;
@@ -79,6 +73,13 @@ export const createExam = async (newExam: ExamType) => {
       }
       await db.insert(studentExamLocation).values(studentExamLocationsTable);
       await reserveLocationsForModule(locations, createdExam[0].insertId);
+
+      if (newExam.responsibleId)
+        await createOccupiedTeacherInPeriod({
+          teacherId: newExam.responsibleId,
+          cause: "TT",
+          timeSlotId: newExam.timeSlotId,
+        });
     }
   } catch (error) {
     console.error("Error creating exam:", error);
@@ -133,14 +134,13 @@ export const deleteExam = async (id: number) => {
   try {
     const deleteExam = await getExam(id); // Assuming this is a function to get an exam by id
     if (!deleteExam) throw new Error("Exam not found");
-
+    await db.delete(exam).where(eq(exam.id, id));
     const timeSlots = await getTimeSlotsInSameDayAndPeriod(
       deleteExam.timeSlotId
     ); // Get the time slots in the same day and period
     const timeSlotIds = timeSlots.map((timeSlot) => timeSlot.id);
-
-    await db.transaction(async (tx) => {
-      await tx
+    if (deleteExam.responsibleId)
+      await db
         .delete(occupiedTeacher)
         .where(
           and(
@@ -149,9 +149,6 @@ export const deleteExam = async (id: number) => {
             eq(occupiedTeacher.teacherId, deleteExam.responsibleId)
           )
         );
-
-      await tx.delete(exam).where(eq(exam.id, id));
-    });
   } catch (error) {
     console.error("Error deleting exam:", error);
     throw error;
@@ -185,7 +182,7 @@ export const getExamsWithDetailsAndCounts = async (
       })
       .from(exam)
       .innerJoin(moduleTable, eq(exam.moduleId, moduleTable.id))
-      .innerJoin(teacher, eq(exam.responsibleId, teacher.id))
+      .leftJoin(teacher, eq(exam.responsibleId, teacher.id))
       .leftJoin(
         student,
         and(
@@ -208,6 +205,6 @@ export type ExamWithDetails = {
   examId: number;
   moduleId: string;
   moduleName: string;
-  responsibleName: string;
+  responsibleName: string | null;
   studentCount: number;
 };

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/form";
 import { createSession } from "@/data/session";
 import { insertOptionsAndModules, insertStudentsChunk } from "@/data/students";
+import { getTeachers, getUsers } from "@/data/teacher";
 import { useModal } from "@/hooks/useModalStore";
 import { cn, expectedColumns, groupData, transformData } from "@/lib/utils";
 import { SessionSchema } from "@/lib/validator";
@@ -25,7 +26,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { read, utils } from "xlsx";
@@ -42,6 +43,13 @@ import {
   SelectValue,
 } from "../ui/select";
 const SessionModal = () => {
+  useEffect(() => {
+    const fetchData = async () => {
+      const teachers = await getTeachers();
+      const user = await getUsers();
+    };
+    fetchData();
+  }, []);
   const { isOpen, onClose, type } = useModal();
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();

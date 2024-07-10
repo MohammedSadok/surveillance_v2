@@ -101,10 +101,11 @@ const DashboardPage = async () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {(totalMonitoring / numberOfTeachers).toFixed(2)}
+                {(totalMonitoring / numberOfTeachers / 2).toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">
                 Moyenne de surveillance par enseignant dans la dernière session
+                par demi journé
               </p>
             </CardContent>
           </Card>
