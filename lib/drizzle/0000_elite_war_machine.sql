@@ -9,7 +9,7 @@ CREATE TABLE `exam` (
 	`module` varchar(20) NOT NULL,
 	`option` varchar(20) NOT NULL,
 	`timeSlotId` int NOT NULL,
-	`responsibleId` int NOT NULL,
+	`responsibleId` int ,
 	CONSTRAINT `exam_id` PRIMARY KEY(`id`)
 ) Engine = InnoDB;
 
@@ -44,7 +44,7 @@ CREATE TABLE `monitoring` (
 CREATE TABLE `monitoringLine` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`teacherId` int NOT NULL,
-	`monitoringId` int NOT NULL,
+	`monitoringId` int ,
 	CONSTRAINT `monitoringLine_id` PRIMARY KEY(`id`)
 ) Engine = InnoDB;
 

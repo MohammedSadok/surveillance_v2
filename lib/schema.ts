@@ -181,12 +181,10 @@ export const monitoringLine = mysqlTable("monitoringLine", {
   teacherId: int("teacherId")
     .references(() => teacher.id, { onDelete: "cascade", onUpdate: "cascade" })
     .notNull(),
-  monitoringId: int("monitoringId")
-    .references(() => monitoring.id, {
-      onDelete: "cascade",
-      onUpdate: "cascade",
-    })
-    .notNull(),
+  monitoringId: int("monitoringId").references(() => monitoring.id, {
+    onDelete: "cascade",
+    onUpdate: "cascade",
+  }),
 });
 
 export const locationTable = mysqlTable("location", {

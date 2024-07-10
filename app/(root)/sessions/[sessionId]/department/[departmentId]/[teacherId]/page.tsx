@@ -1,3 +1,4 @@
+import MonitoringOut from "@/components/MonitoringOut";
 import TeacherSchedule from "@/components/TeacherSchedule";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +21,7 @@ const page = async ({ params }: Props) => {
           title={`Enseignant  ${teacher?.firstName} ${teacher?.lastName}`}
           description="Gérer les heurs d'occupation"
         />
+        {teacher && <MonitoringOut teacherId={teacher.id} />}
       </div>
       <Separator />
       {teacher && (

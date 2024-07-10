@@ -12,7 +12,7 @@ import {
   TimeSlot,
   users,
 } from "@/lib/schema";
-import { and, count, eq, inArray, notInArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, notInArray } from "drizzle-orm";
 import {
   DayWithTimeSlotIds,
   getTimeSlotById,
@@ -34,7 +34,8 @@ export const getTeachersInDepartment = async (
     const result = await db
       .select()
       .from(teacher)
-      .where(eq(teacher.departmentId, departmentId));
+      .where(eq(teacher.departmentId, departmentId))
+      .orderBy(asc(teacher.lastName));
     return result;
   } catch (error) {
     console.error("Error fetching teachers in department:", error);
@@ -495,6 +496,51 @@ export const getTeacherCalendar = async (
     return Object.values(days);
   } catch (error) {
     console.error("Error fetching days with time slots:", error);
+    throw error;
+  }
+};
+
+export const getTeacherMonitoringOut = async (teacherId: number) => {
+  try {
+    const monitoringOut = await db
+      .select({ count: count(occupiedTeacher.id) })
+      .from(monitoringLine)
+      .where(
+        and(
+          eq(monitoringLine.teacherId, teacherId),
+          isNull(monitoringLine.monitoringId)
+        )
+      );
+    return monitoringOut[0].count || 0;
+  } catch (error) {
+    console.error("Error fetching teacher monitoring out:", error);
+    throw error;
+  }
+};
+
+export const addTeacherMonitoringOut = async (teacherId: number) => {
+  try {
+    await db.insert(monitoringLine).values({ teacherId, monitoringId: null });
+  } catch (error) {
+    console.error("Error adding teacher monitoring out:", error);
+    throw error;
+  }
+};
+
+export const removeTeacherMonitoringOut = async (teacherId: number) => {
+  try {
+    const deletedLine = await db.query.monitoringLine.findFirst({
+      where: and(
+        eq(monitoringLine.teacherId, teacherId),
+        isNull(monitoringLine.monitoringId)
+      ),
+    });
+    if (deletedLine)
+      await db
+        .delete(monitoringLine)
+        .where(eq(monitoringLine.id, deletedLine.id));
+  } catch (error) {
+    console.error("Error removing teacher monitoring out:", error);
     throw error;
   }
 };
