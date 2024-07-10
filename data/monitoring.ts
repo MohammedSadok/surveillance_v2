@@ -4,6 +4,7 @@ import { db } from "@/lib/config";
 import {
   exam,
   locationTable,
+  moduleTable,
   monitoring,
   Monitoring,
   monitoringLine,
@@ -109,6 +110,12 @@ export const getDaysWithMonitoringDep = async (
       .from(timeSlot)
       .where(and(eq(timeSlot.sessionExamId, sessionId)))
       .as("timeSlots");
+
+    const SessionTimeSlots = await db
+      .select()
+      .from(timeSlot)
+      .where(and(eq(timeSlot.sessionExamId, sessionId)));
+
     // Fetching the teachers who are monitoring
     const monitoringTeachers = await db
       .select({
@@ -129,27 +136,27 @@ export const getDaysWithMonitoringDep = async (
       .innerJoin(timeSlots, eq(occupiedTeacher.timeSlotId, timeSlots.id))
       .orderBy(timeSlots.date, desc(timeSlots.period));
 
-    const days = result.reduce((acc, row) => {
-      const dateKey = row.timeSlots.date.toISOString().split("T")[0];
+    const days = SessionTimeSlots.reduce((acc, row) => {
+      const dateKey = row.date.toISOString().split("T")[0];
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, timeSlots: [] };
       }
 
       const timeSlotIndex = acc[dateKey].timeSlots.findIndex(
-        (slot) => slot.id === row.timeSlots.id
+        (slot) => slot.id === row.id
       );
 
       if (timeSlotIndex === -1) {
         acc[dateKey].timeSlots.push({
-          id: row.timeSlots.id,
-          period: row.timeSlots.period,
-          timePeriod: row.timeSlots.timePeriod,
+          id: row.id,
+          period: row.period,
+          timePeriod: row.timePeriod,
           monitoring: [],
         });
       }
 
       const currentTimeSlot = acc[dateKey].timeSlots.find(
-        (slot) => slot.id === row.timeSlots.id
+        (slot) => slot.id === row.id
       );
 
       if (currentTimeSlot) {
@@ -202,6 +209,102 @@ export const getDaysWithMonitoringDep = async (
     console.error("Error fetching days and time slots:", error);
     throw error;
   }
+};
+
+type Teacher = {
+  firstName: string;
+  lastName: string;
+};
+
+type Location = {
+  locationName: string;
+  teachers: Teacher[];
+};
+
+export type MonitoringDay = {
+  moduleId: string;
+  moduleTableName: string;
+  timeSlot: string;
+  responsibleName: string;
+  locations: Location[];
+};
+
+export const getMonitoringInDay = async (
+  day: DayWithTimeSlotsAndMonitoring
+): Promise<MonitoringDay[]> => {
+  const teachers = db
+    .select({
+      teacherId: teacher.id,
+      firstName: teacher.firstName,
+      lastName: teacher.lastName,
+    })
+    .from(exam)
+    .innerJoin(teacher, eq(teacher.id, exam.responsibleId))
+    .as("teachers");
+  const examsInDay = await db
+    .select({
+      examId: exam.id,
+      timeSlotId: exam.timeSlotId,
+      monitoringId: monitoring.id,
+      teacherFirstName: teacher.firstName,
+      teacherLastName: teacher.lastName,
+      locationName: locationTable.name,
+      locationId: locationTable.id,
+      moduleId: exam.moduleId,
+      moduleTableName: moduleTable.name,
+      moduleResponsible: exam.responsibleId,
+      responsibleFirstName: teachers.firstName,
+      responsibleLastName: teachers.lastName,
+    })
+    .from(exam)
+    .where(
+      inArray(
+        exam.timeSlotId,
+        day.timeSlots.map((ts) => ts.id)
+      )
+    )
+    .innerJoin(moduleTable, eq(moduleTable.id, exam.moduleId))
+    .innerJoin(monitoring, eq(monitoring.examId, exam.id))
+    .innerJoin(locationTable, eq(locationTable.id, monitoring.locationId))
+    .innerJoin(monitoringLine, eq(monitoringLine.monitoringId, monitoring.id))
+    .innerJoin(teacher, eq(teacher.id, monitoringLine.teacherId))
+    .innerJoin(teachers, eq(teachers.teacherId, exam.responsibleId));
+
+  const moduleMap: { [key: string]: MonitoringDay } = {};
+
+  examsInDay.forEach((exam) => {
+    const moduleKey = exam.moduleId;
+    if (!moduleMap[moduleKey]) {
+      const timeSlotIndex = day.timeSlots.findIndex(
+        (ts) => ts.id === exam.timeSlotId
+      );
+      moduleMap[moduleKey] = {
+        moduleId: exam.moduleId,
+        moduleTableName: exam.moduleTableName,
+        timeSlot: `S ${timeSlotIndex + 1}`,
+        responsibleName: `${exam.responsibleFirstName} ${exam.responsibleLastName}`,
+        locations: [],
+      };
+    }
+
+    const moduleExam = moduleMap[moduleKey];
+    let location = moduleExam.locations.find(
+      (loc) => loc.locationName === exam.locationName
+    );
+    if (!location) {
+      location = {
+        locationName: exam.locationName,
+        teachers: [],
+      };
+      moduleExam.locations.push(location);
+    }
+
+    location.teachers.push({
+      firstName: exam.teacherFirstName,
+      lastName: exam.teacherLastName,
+    });
+  });
+  return Object.values(moduleMap);
 };
 
 export const getMonitoringIdsInSession = async (sessionId: number) => {

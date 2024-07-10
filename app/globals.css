@@ -107,5 +107,5 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 }
 @page {
   size: auto;
-  margin: 5mm;
+  margin: 10mm;
 }

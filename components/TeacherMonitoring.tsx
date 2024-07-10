@@ -25,6 +25,8 @@ import {
 import {
   DayWithTimeSlotsAndMonitoring,
   getDaysWithMonitoringDep,
+  getMonitoringInDay,
+  MonitoringDay,
 } from "@/data/monitoring";
 // Assurez-vous que le type est correct
 import logo from "@/images/logo.png";
@@ -33,6 +35,7 @@ import { ArrowLeftCircle, ArrowRightCircle, FileDown } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
+import PrintMonitoringDay from "./print/PrintMonitoringDay";
 import PrintTeacherMonitoring from "./print/PrintTeacherMonitoring";
 import { Loader } from "./ui/loader";
 
@@ -51,12 +54,16 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
   const [sessionDays, setSessionDays] = useState<
     DayWithTimeSlotsAndMonitoring[]
   >([]);
+  const [monitoringDay, setMonitoringDay] = useState<MonitoringDay[]>([]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [currentRangeStart, setCurrentRangeStart] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [day, setDay] = useState<string | null>(null);
   const itemsPerPage = 30;
   const daysPerRange = 3;
   const componentRef = useRef<any>();
+  const componentDayRef = useRef<any>();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,6 +81,22 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
   });
+  const handlePrintDay = useReactToPrint({
+    content: () => componentDayRef.current,
+  });
+
+  useEffect(() => {
+    if (day) {
+      handlePrintDay();
+      setDay(null); // Reset the state after printing
+    }
+  }, [setDay, handlePrintDay, day]);
+
+  const printMonitoringDay = async (day: DayWithTimeSlotsAndMonitoring) => {
+    const result = await getMonitoringInDay(day);
+    setMonitoringDay(result);
+    setDay(day.date); // Set the state to trigger printing
+  };
 
   const currentRangeEnd = Math.min(
     currentRangeStart + daysPerRange,
@@ -168,8 +191,13 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
                       <ArrowLeftCircle className="w-5 h-5" />
                     </Button>
                   )}
-
-                  {day.date}
+                  <Button
+                    onClick={() => printMonitoringDay(day)}
+                    variant="ghost"
+                    className="text-xs h-5"
+                  >
+                    {day.date}
+                  </Button>
 
                   {index === displayedDays.length - 1 && (
                     <Button
@@ -191,7 +219,7 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
                     key={timeSlotItem.id}
                     className="border text-center text-xs p-0"
                   >
-                    {timeSlotItem.period}
+                    {timeSlotItem.timePeriod}
                   </TableCell>
                 ))}
             </TableRow>
@@ -281,6 +309,23 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
             sessionDays={sessionDays}
             selectedDepartment={selectedDepartment}
           />
+        </div>
+      </div>
+      <div className="hidden">
+        <div ref={componentDayRef}>
+          <div className="flex justify-between items-center">
+            <Image
+              src={logo}
+              alt={""}
+              style={{
+                objectFit: "contain",
+              }}
+              className="w-[200px]"
+            />
+            <h1 className="text-2xl"> date: {day}</h1>
+          </div>
+
+          <PrintMonitoringDay monitoringDay={monitoringDay} />
         </div>
       </div>
     </div>
