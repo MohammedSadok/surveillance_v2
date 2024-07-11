@@ -26,7 +26,9 @@ import {
   DayWithTimeSlotsAndMonitoring,
   getDaysWithMonitoringDep,
   getMonitoringInDay,
+  getReservistsDay,
   MonitoringDay,
+  MonitoringDayReservist,
 } from "@/data/monitoring";
 // Assurez-vous que le type est correct
 import logo from "@/images/logo.png";
@@ -55,7 +57,9 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
     DayWithTimeSlotsAndMonitoring[]
   >([]);
   const [monitoringDay, setMonitoringDay] = useState<MonitoringDay[]>([]);
-
+  const [reservists, setReservists] = useState<MonitoringDayReservist | null>(
+    null
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [currentRangeStart, setCurrentRangeStart] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -94,6 +98,8 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
 
   const printMonitoringDay = async (day: DayWithTimeSlotsAndMonitoring) => {
     const result = await getMonitoringInDay(day);
+    const reservists = await getReservistsDay(day);
+    setReservists(reservists);
     setMonitoringDay(result);
     setDay(day.date); // Set the state to trigger printing
   };
@@ -326,6 +332,27 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
           </div>
 
           <PrintMonitoringDay monitoringDay={monitoringDay} />
+
+          <div className="space-y-3">
+            <h1 className="text-2xl">Réserviste de matin :</h1>
+            {reservists?.reservistsIdMorning.map((reservist, index) => (
+              <span key={index} className="">
+                {reservist.teacherFirstName +
+                  " " +
+                  reservist.teacherLastName +
+                  ", "}
+              </span>
+            ))}
+            <h1 className="text-2xl">Réserviste de soire :</h1>
+            {reservists?.reservistsIdAfternoon.map((reservist, index) => (
+              <span key={index} className="">
+                {reservist.teacherFirstName +
+                  " " +
+                  reservist.teacherLastName +
+                  ", "}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -31,7 +31,7 @@ const PrintMonitoringDay: React.FC<Props> = ({ monitoringDay }) => {
               <TableRow key={`${moduleData.moduleId}-${locationIndex}`}>
                 <TableCell className="border text-xs p-1">
                   <p>Module: {moduleData.moduleTableName}</p>
-                  <p>Créneau: {moduleData.timeSlot}</p>
+                  <p>Séance: {moduleData.timeSlot}</p>
                   <p>
                     Résponsable:
                     {moduleData.responsibleName}

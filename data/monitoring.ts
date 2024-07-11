@@ -228,7 +228,48 @@ export type MonitoringDay = {
   responsibleName: string;
   locations: Location[];
 };
-
+export type MonitoringDayReservist = {
+  reservistsIdMorning: {
+    teacherFirstName: string;
+    teacherLastName: string;
+  }[];
+  reservistsIdAfternoon: {
+    teacherFirstName: string;
+    teacherLastName: string;
+  }[];
+};
+export const getReservistsDay = async (
+  day: DayWithTimeSlotsAndMonitoring
+): Promise<MonitoringDayReservist> => {
+  const timeSlotIds = day.timeSlots.map((ts) => ts.id);
+  const reservistsIdMorning = await db
+    .selectDistinct({
+      teacherFirstName: teacher.firstName,
+      teacherLastName: teacher.lastName,
+    })
+    .from(occupiedTeacher)
+    .innerJoin(teacher, eq(teacher.id, occupiedTeacher.teacherId))
+    .where(
+      and(
+        inArray(occupiedTeacher.timeSlotId, timeSlotIds.slice(0, 2)),
+        eq(occupiedTeacher.cause, "RR")
+      )
+    );
+  const reservistsIdAfternoon = await db
+    .selectDistinct({
+      teacherFirstName: teacher.firstName,
+      teacherLastName: teacher.lastName,
+    })
+    .from(occupiedTeacher)
+    .innerJoin(teacher, eq(teacher.id, occupiedTeacher.teacherId))
+    .where(
+      and(
+        inArray(occupiedTeacher.timeSlotId, timeSlotIds.slice(2, 4)),
+        eq(occupiedTeacher.cause, "RR")
+      )
+    );
+  return { reservistsIdMorning, reservistsIdAfternoon };
+};
 export const getMonitoringInDay = async (
   day: DayWithTimeSlotsAndMonitoring
 ): Promise<MonitoringDay[]> => {
