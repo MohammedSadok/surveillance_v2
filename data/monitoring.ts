@@ -13,7 +13,7 @@ import {
   teacher,
   timeSlot,
 } from "@/lib/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { getLocations } from "./location";
 import { DayWithTimeSlotIds } from "./timeSlot";
 export const createMonitoring = async (
@@ -268,7 +268,8 @@ export const getMonitoringInDay = async (
     .innerJoin(locationTable, eq(locationTable.id, monitoring.locationId))
     .innerJoin(monitoringLine, eq(monitoringLine.monitoringId, monitoring.id))
     .innerJoin(teacher, eq(teacher.id, monitoringLine.teacherId))
-    .innerJoin(teachers, eq(teachers.teacherId, exam.responsibleId));
+    .innerJoin(teachers, eq(teachers.teacherId, exam.responsibleId))
+    .orderBy(asc(exam.timeSlotId), asc(locationTable.id));
 
   const moduleMap: { [key: string]: MonitoringDay } = {};
 

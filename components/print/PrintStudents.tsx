@@ -11,7 +11,7 @@ import {
 interface PrintStudentsProps {
   pageStudents: PageStudent[];
   moduleName: string;
-  responsibleName: string;
+  responsibleName: string | null;
   isPresent?: boolean;
 }
 
@@ -26,7 +26,7 @@ const PrintStudents = ({
         <div key={index} className="page-student">
           <h2>Location: {pageStudent.location.name}</h2>
           <p>Module Name: {moduleName}</p>
-          <p>Responsible Name: {responsibleName}</p>
+          <p>Responsible Name: {responsibleName ?? "Non spécifié"}</p>
 
           {pageStudent.studentGroups.map((studentGroup, groupIndex) => (
             <div key={groupIndex} className="student-group">
