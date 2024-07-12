@@ -10,7 +10,6 @@ import {
   CalendarCheck,
   CalendarDays,
   NotebookText,
-  Users,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -125,19 +124,6 @@ export function MainNav({ sessionId }: SidebarProps) {
             <span>Locaux</span>
           </span>
         </Link>
-        {user?.isAdmin && (
-          <Link href="/users">
-            <span
-              className={cn(
-                "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                path === "/users" ? "bg-accent" : "transparent"
-              )}
-            >
-              <Users className="mr-2 h-4 w-4" />
-              <span>Utilisateurs</span>
-            </span>
-          </Link>
-        )}
       </nav>
     </div>
   );

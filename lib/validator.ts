@@ -132,7 +132,25 @@ export const ExamSchema = z.object({
   manual: z.boolean().default(false),
   locations: z.array(LocationExamSchema),
 });
+export const UpdateNameSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+});
 
+export const UpdateEmailSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+export const UpdatePasswordSchema = z
+  .object({
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z
+      .string()
+      .min(6, "Password confirmation must be at least 6 characters"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 export const LoginSchema = z.object({
   email: z.string().email({
     message: "L'adresse e-mail est requise",

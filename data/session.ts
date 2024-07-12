@@ -45,6 +45,13 @@ export const getUserByEmail = async (email: string) => {
   return { email: result?.email, password: result?.password } || null;
 };
 
+export const getUserDetailsByEmail = async (email: string) => {
+  const result = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+  return result || null;
+};
+
 export const getUserById = async (id: number) => {
   const result = await db.query.users.findFirst({
     where: eq(users.id, id),
@@ -435,6 +442,7 @@ export const getStatisticsOfLastSession = async (): Promise<Statistics> => {
       })
       .from(exam)
       .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
+      .where(eq(timeSlot.sessionExamId, lastSession.id))
       .groupBy(timeSlot.date);
 
     const examsPerDay = numberOfExamsPerDay.map((exam) => ({
