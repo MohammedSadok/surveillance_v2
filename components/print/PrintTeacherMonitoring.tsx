@@ -72,13 +72,22 @@ const PrintTeacherMonitoring = ({ sessionDays, selectedDepartment }: Props) => {
               </TableRow>
               <TableRow key={2}>
                 {displayedDays.map((day, index) => (
-                  <TableCell
-                    className="border text-center text-xs p-0"
-                    colSpan={2}
-                    key={index}
-                  >
-                    {index % 2 === 0 ? "AM" : "PM"}
-                  </TableCell>
+                  <>
+                    <TableCell
+                      className="border text-center text-xs p-0"
+                      colSpan={2}
+                      key={index}
+                    >
+                      Matin
+                    </TableCell>
+                    <TableCell
+                      className="border text-center text-xs p-0"
+                      colSpan={2}
+                      key={index}
+                    >
+                      Aprés-midi
+                    </TableCell>
+                  </>
                 ))}
               </TableRow>
             </TableHeader>

@@ -40,12 +40,14 @@ import { useReactToPrint } from "react-to-print";
 import PrintMonitoringDay from "./print/PrintMonitoringDay";
 import PrintTeacherMonitoring from "./print/PrintTeacherMonitoring";
 import { Loader } from "./ui/loader";
-
 interface TeacherMonitoringProps {
   departments: Department[];
   sessionId: number;
 }
-
+type DayWithTimePeriod = {
+  day: DayWithTimeSlotsAndMonitoring;
+  timePeriod: "MORNING" | "AFTERNOON";
+};
 const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
   departments,
   sessionId,
@@ -57,13 +59,11 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
     DayWithTimeSlotsAndMonitoring[]
   >([]);
   const [monitoringDay, setMonitoringDay] = useState<MonitoringDay[]>([]);
-  const [reservists, setReservists] = useState<MonitoringDayReservist | null>(
-    null
-  );
+  const [reservists, setReservists] = useState<MonitoringDayReservist[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentRangeStart, setCurrentRangeStart] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [day, setDay] = useState<string | null>(null);
+  const [day, setDay] = useState<DayWithTimePeriod | null>(null);
   const itemsPerPage = 30;
   const daysPerRange = 3;
   const componentRef = useRef<any>();
@@ -96,12 +96,16 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
     }
   }, [setDay, handlePrintDay, day]);
 
-  const printMonitoringDay = async (day: DayWithTimeSlotsAndMonitoring) => {
-    const result = await getMonitoringInDay(day);
-    const reservists = await getReservistsDay(day);
+  const printMonitoringDay = async (day: DayWithTimePeriod) => {
+    const timeSlotIds: number[] =
+      day.timePeriod === "MORNING"
+        ? day.day.timeSlots.slice(0, 2).map((slot) => slot.id)
+        : day.day.timeSlots.slice(2, 4).map((slot) => slot.id);
+    const result = await getMonitoringInDay(timeSlotIds);
+    const reservists = await getReservistsDay(timeSlotIds);
     setReservists(reservists);
     setMonitoringDay(result);
-    setDay(day.date); // Set the state to trigger printing
+    setDay(day); // Set the state to trigger printing
   };
 
   const currentRangeEnd = Math.min(
@@ -198,11 +202,29 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
                     </Button>
                   )}
                   <Button
-                    onClick={() => printMonitoringDay(day)}
+                    onClick={() =>
+                      printMonitoringDay({
+                        day: day,
+                        timePeriod: "MORNING",
+                      })
+                    }
                     variant="ghost"
                     className="text-xs h-5"
                   >
-                    {day.date}
+                    Matin
+                  </Button>
+                  <span>{day.date}</span>
+                  <Button
+                    onClick={() =>
+                      printMonitoringDay({
+                        day: day,
+                        timePeriod: "AFTERNOON",
+                      })
+                    }
+                    variant="ghost"
+                    className="text-xs h-5"
+                  >
+                    Aprés-midi
                   </Button>
 
                   {index === displayedDays.length - 1 && (
@@ -328,31 +350,24 @@ const TeacherMonitoring: React.FC<TeacherMonitoringProps> = ({
               }}
               className="w-[200px]"
             />
-            <h1 className="text-2xl"> date: {day}</h1>
+            <h1 className="text-2xl"> date: {day?.day.date}</h1>
+            <h1 className="text-2xl">
+              {" "}
+              Période: {day?.timePeriod === "MORNING" ? "Matin" : "Après-midi"}
+            </h1>
           </div>
 
           <PrintMonitoringDay monitoringDay={monitoringDay} />
 
-          <div className="space-y-3">
-            <h1 className="text-2xl">Réserviste de matin :</h1>
-            {reservists?.reservistsIdMorning.map((reservist, index) => (
-              <span key={index} className="">
-                {reservist.teacherFirstName +
-                  " " +
-                  reservist.teacherLastName +
-                  ", "}
-              </span>
-            ))}
-            <h1 className="text-2xl">Réserviste de soire :</h1>
-            {reservists?.reservistsIdAfternoon.map((reservist, index) => (
-              <span key={index} className="">
-                {reservist.teacherFirstName +
-                  " " +
-                  reservist.teacherLastName +
-                  ", "}
-              </span>
-            ))}
-          </div>
+          <h1 className="text-2xl">Réserviste :</h1>
+          {reservists.map((reservist, index) => (
+            <span key={index} className="">
+              {reservist.teacherFirstName +
+                " " +
+                reservist.teacherLastName +
+                ", "}
+            </span>
+          ))}
         </div>
       </div>
     </div>

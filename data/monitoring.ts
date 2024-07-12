@@ -230,20 +230,13 @@ export type MonitoringDay = {
   locations: Location[];
 };
 export type MonitoringDayReservist = {
-  reservistsIdMorning: {
-    teacherFirstName: string;
-    teacherLastName: string;
-  }[];
-  reservistsIdAfternoon: {
-    teacherFirstName: string;
-    teacherLastName: string;
-  }[];
+  teacherFirstName: string;
+  teacherLastName: string;
 };
 export const getReservistsDay = async (
-  day: DayWithTimeSlotsAndMonitoring
-): Promise<MonitoringDayReservist> => {
-  const timeSlotIds = day.timeSlots.map((ts) => ts.id);
-  const reservistsIdMorning = await db
+  timeSlots: number[]
+): Promise<MonitoringDayReservist[]> => {
+  const reservists = await db
     .selectDistinct({
       teacherFirstName: teacher.firstName,
       teacherLastName: teacher.lastName,
@@ -252,27 +245,15 @@ export const getReservistsDay = async (
     .innerJoin(teacher, eq(teacher.id, occupiedTeacher.teacherId))
     .where(
       and(
-        inArray(occupiedTeacher.timeSlotId, timeSlotIds.slice(0, 2)),
+        inArray(occupiedTeacher.timeSlotId, timeSlots),
         eq(occupiedTeacher.cause, "RR")
       )
     );
-  const reservistsIdAfternoon = await db
-    .selectDistinct({
-      teacherFirstName: teacher.firstName,
-      teacherLastName: teacher.lastName,
-    })
-    .from(occupiedTeacher)
-    .innerJoin(teacher, eq(teacher.id, occupiedTeacher.teacherId))
-    .where(
-      and(
-        inArray(occupiedTeacher.timeSlotId, timeSlotIds.slice(2, 4)),
-        eq(occupiedTeacher.cause, "RR")
-      )
-    );
-  return { reservistsIdMorning, reservistsIdAfternoon };
+
+  return reservists;
 };
 export const getMonitoringInDay = async (
-  day: DayWithTimeSlotsAndMonitoring
+  timeSlots: number[]
 ): Promise<MonitoringDay[]> => {
   const teachers = db
     .select({
@@ -299,12 +280,7 @@ export const getMonitoringInDay = async (
       responsibleLastName: teachers.lastName,
     })
     .from(exam)
-    .where(
-      inArray(
-        exam.timeSlotId,
-        day.timeSlots.map((ts) => ts.id)
-      )
-    )
+    .where(inArray(exam.timeSlotId, timeSlots))
     .innerJoin(moduleTable, eq(moduleTable.id, exam.moduleId))
     .innerJoin(monitoring, eq(monitoring.examId, exam.id))
     .innerJoin(locationTable, eq(locationTable.id, monitoring.locationId))
@@ -318,9 +294,7 @@ export const getMonitoringInDay = async (
   examsInDay.forEach((exam) => {
     const moduleKey = exam.moduleId;
     if (!moduleMap[moduleKey]) {
-      const timeSlotIndex = day.timeSlots.findIndex(
-        (ts) => ts.id === exam.timeSlotId
-      );
+      const timeSlotIndex = timeSlots.findIndex((ts) => ts === exam.timeSlotId);
       moduleMap[moduleKey] = {
         moduleId: exam.moduleId,
         moduleTableName: exam.moduleTableName,

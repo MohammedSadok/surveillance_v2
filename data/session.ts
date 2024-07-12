@@ -30,7 +30,7 @@ import {
   getFreeTeachersInSameDayAndCountMonitoring,
 } from "./teacher";
 import { DayWithTimeSlotIds, getDaysWithTimeSlots } from "./timeSlot";
-
+const locationsNeededFour = ["NO", "F", "B", "H", "Hall"];
 export const LoginUser = async (email: string, password: string) => {
   const result = await db.query.users.findFirst({
     where: and(eq(users.email, email), eq(users.password, password)),
@@ -282,7 +282,7 @@ export const validateSession = async (sessionId: number) => {
       for (const location of locations) {
         const neededTeacherNumber =
           location.locationType === "AMPHITHEATER"
-            ? location.locationName === "NO"
+            ? locationsNeededFour.includes(location.locationName)
               ? 4
               : 3
             : 2;
