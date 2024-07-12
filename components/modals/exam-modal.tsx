@@ -90,10 +90,7 @@ const ExamModal = () => {
     const fetchData = async () => {
       try {
         const response = await getDepartments();
-        if (params.timeSlotId) {
-          const locations = await getFreeLocations(parseInt(params.timeSlotId));
-          setLocations(locations);
-        }
+
         setDepartments(response);
       } catch (error) {
         console.error(
@@ -192,6 +189,9 @@ const ExamModal = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const locations = await getFreeLocations(parseInt(params.timeSlotId));
+        setLocations(locations);
+
         const modules = await getModulesForExam(
           parseInt(params.timeSlotId),
           form.getValues("optionId")
@@ -223,6 +223,10 @@ const ExamModal = () => {
             values.responsibleId === undefined ? null : values.responsibleId,
         });
       form.reset();
+      setTeachers([]);
+      setLocations([]);
+      setModules([]);
+      setOptions([]);
       router.refresh();
       onClose();
     } catch (error) {

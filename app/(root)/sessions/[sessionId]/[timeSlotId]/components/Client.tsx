@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
+import { ExamWithDetails } from "@/data/exam";
 import { useModal } from "@/hooks/useModalStore";
-import { Exam, SessionExam, TimeSlot } from "@/lib/schema";
+import { SessionExam, TimeSlot } from "@/lib/schema";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { columns } from "./Columns";
-import { ExamWithDetails } from "@/data/exam";
 
 interface ExamClientProps {
   session: SessionExam;
@@ -29,8 +29,8 @@ export const ExamClient: React.FC<ExamClientProps> = ({
         {timeSlot && (
           <Heading
             title={`Examens (${data.length})`}
-            description={`le ${format(timeSlot.date, "EEEE d-MM-y")} de ${
-              timeSlot?.period
+            description={`${format(timeSlot.date, "EEEE d-MM-y")} ${
+              timeSlot?.timePeriod
             } `}
           />
         )}

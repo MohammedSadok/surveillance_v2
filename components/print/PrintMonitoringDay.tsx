@@ -34,7 +34,9 @@ const PrintMonitoringDay: React.FC<Props> = ({ monitoringDay }) => {
                   <p>Séance: {moduleData.timeSlot}</p>
                   <p>
                     Résponsable:
-                    {moduleData.responsibleName}
+                    {moduleData.responsibleName === "null null"
+                      ? "Non spécifié"
+                      : moduleData.responsibleName}
                   </p>
                 </TableCell>
                 <TableCell className="border text-center text-xs">

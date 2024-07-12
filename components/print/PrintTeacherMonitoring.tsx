@@ -44,7 +44,7 @@ const PrintTeacherMonitoring = ({ sessionDays, selectedDepartment }: Props) => {
     return chunkedArray;
   };
 
-  const groupedDays = chunkArray(sessionDays, 6);
+  const groupedDays = chunkArray(sessionDays, 7);
 
   return (
     <>

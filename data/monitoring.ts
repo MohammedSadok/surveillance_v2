@@ -309,7 +309,7 @@ export const getMonitoringInDay = async (
     .innerJoin(locationTable, eq(locationTable.id, monitoring.locationId))
     .innerJoin(monitoringLine, eq(monitoringLine.monitoringId, monitoring.id))
     .innerJoin(teacher, eq(teacher.id, monitoringLine.teacherId))
-    .innerJoin(teachers, eq(teachers.teacherId, exam.responsibleId))
+    .leftJoin(teachers, eq(teachers.teacherId, exam.responsibleId))
     .orderBy(asc(exam.timeSlotId), asc(locationTable.id));
 
   const moduleMap: { [key: string]: MonitoringDay } = {};
