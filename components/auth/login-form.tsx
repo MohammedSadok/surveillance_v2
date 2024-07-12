@@ -13,21 +13,14 @@ import { Input } from "@/components/ui/input";
 import { LoginSchema } from "@/lib/validator";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FormError } from "./form-error";
 
 const LoginForm = () => {
-  const searchParams = useSearchParams();
-  const urlError =
-    searchParams.get("error") === "OAuthAccountNotLinked"
-      ? "Email already in use with different provider!"
-      : "";
-
   const [error, setError] = useState<string | undefined>("");
-  const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
@@ -37,18 +30,20 @@ const LoginForm = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof LoginSchema>) {
+  const onSubmit = async (values: z.infer<typeof LoginSchema>) => {
     setError("");
-    startTransition(() => {
-      login(values)
-        .then((data) => {
-          if (data?.error) {
-            setError(data.error);
-          }
-        })
-        .catch(() => setError("Something went wrong"));
-    });
-  }
+    setLoading(true);
+    try {
+      const data = await login(values);
+      if (data?.error) {
+        setError(data.error);
+      }
+    } catch (error: any) {
+      setError("Something went wrong. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="grid gap-6">
@@ -62,7 +57,7 @@ const LoginForm = () => {
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
-                    disabled={isPending}
+                    disabled={loading}
                     placeholder="name@example.com"
                     type="email"
                     autoCapitalize="none"
@@ -81,7 +76,7 @@ const LoginForm = () => {
                 <FormLabel>Mot de passe</FormLabel>
                 <FormControl>
                   <Input
-                    disabled={isPending}
+                    disabled={loading}
                     placeholder="******"
                     type="password"
                     autoCapitalize="none"
@@ -92,10 +87,10 @@ const LoginForm = () => {
               </FormItem>
             )}
           />
-          <FormError message={error || urlError} />
+          <FormError message={error} />
 
-          <Button disabled={isPending} className="w-full">
-            {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          <Button disabled={loading} className="w-full">
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Se connecter avec l&apos;email
           </Button>
         </form>

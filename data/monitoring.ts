@@ -109,6 +109,7 @@ export const getDaysWithMonitoringDep = async (
       .select()
       .from(timeSlot)
       .where(and(eq(timeSlot.sessionExamId, sessionId)))
+      .orderBy(timeSlot.date, desc(timeSlot.period))
       .as("timeSlots");
 
     const SessionTimeSlots = await db

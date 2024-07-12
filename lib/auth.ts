@@ -34,7 +34,6 @@ export const {
       if (!existingUser) return token;
       token.name = existingUser.name;
       token.email = existingUser.email;
-      // token.isAdmin = existingUser.isAdmin;
       return token;
     },
   },
