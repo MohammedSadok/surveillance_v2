@@ -6,6 +6,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DayWithTimeSlotsAndMonitoring } from "@/data/monitoring";
+import React from "react";
 
 interface Props {
   sessionDays: DayWithTimeSlotsAndMonitoring[];
@@ -52,7 +53,7 @@ const PrintTeacherMonitoring = ({ sessionDays, selectedDepartment }: Props) => {
         <div key={pageIndex} className="mb-3">
           <Table className="border rounded-lg">
             <TableHeader>
-              <TableRow key={1}>
+              <TableRow key={`header-row-${pageIndex}-1`}>
                 <TableCell
                   className="border text-center text-xs p-0.2"
                   rowSpan={2}
@@ -60,7 +61,7 @@ const PrintTeacherMonitoring = ({ sessionDays, selectedDepartment }: Props) => {
                   Enseignants
                 </TableCell>
 
-                {displayedDays.map((day, index) => (
+                {displayedDays.map((day) => (
                   <TableCell
                     key={day.date}
                     className="border text-center p-0.2 text-xs relative"
@@ -70,30 +71,31 @@ const PrintTeacherMonitoring = ({ sessionDays, selectedDepartment }: Props) => {
                   </TableCell>
                 ))}
               </TableRow>
-              <TableRow key={2}>
-                {displayedDays.map((day, index) => (
-                  <>
+              <TableRow key={`header-row-${pageIndex}-2`}>
+                {displayedDays.map((day, dayIndex) => (
+                  <React.Fragment key={`header-row-${pageIndex}-${day.date}`}>
                     <TableCell
                       className="border text-center text-xs p-0"
                       colSpan={2}
-                      key={index}
                     >
                       Matin
                     </TableCell>
                     <TableCell
                       className="border text-center text-xs p-0"
                       colSpan={2}
-                      key={index}
                     >
                       Aprés-midi
                     </TableCell>
-                  </>
+                  </React.Fragment>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {teachers.map((teacher, index) => (
-                <TableRow key={index} className="py-4">
+              {teachers.map((teacher, teacherIndex) => (
+                <TableRow
+                  key={`teacher-row-${pageIndex}-${teacherIndex}`}
+                  className="py-4"
+                >
                   <TableCell className="border text-center text-xs p-0.2">
                     {teacher}
                   </TableCell>
@@ -109,7 +111,7 @@ const PrintTeacherMonitoring = ({ sessionDays, selectedDepartment }: Props) => {
                       );
                       return (
                         <TableCell
-                          key={timeSlotItem.id}
+                          key={`timeSlotItem-${pageIndex}-${timeSlotItem.id}`}
                           className="border text-center text-xs p-0.2 w-8"
                         >
                           {monitoringLine ? (

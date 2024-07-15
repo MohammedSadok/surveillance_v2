@@ -1,13 +1,15 @@
 "use client";
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+
 type OverviewProps = {
   data: {
     day: string;
     total: number;
   }[];
 };
-export const Overview = ({ data }: OverviewProps) => {
+
+export const Overview = ({ data = [] }: OverviewProps) => {
   return (
     <ResponsiveContainer width="100%" height={350}>
       <BarChart data={data}>
