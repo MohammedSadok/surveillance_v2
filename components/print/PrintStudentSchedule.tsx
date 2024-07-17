@@ -21,7 +21,7 @@ const PrintStudentSchedule = ({
       <TableHeader>
         <TableRow key={10}>
           <TableCell className="border text-center text-xs p-1" rowSpan={2}>
-            cne
+            CNE
           </TableCell>
           <TableCell className="border text-center text-xs p-1" rowSpan={2}>
             Nom et Prénom

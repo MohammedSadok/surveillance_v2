@@ -42,6 +42,12 @@ const PrintStudents = ({
                     <TableHead className="border text-center p-0 w-44">
                       {"Nom et prénom"}
                     </TableHead>
+                    <TableHead className="border text-center p-0">
+                      {"Signature"}
+                    </TableHead>
+                    <TableHead className="border text-center p-0">
+                      {"Observation"}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -56,6 +62,8 @@ const PrintStudents = ({
                       <TableCell className="border text-center text-xs p-0.5">
                         {student.firstName} {student.lastName}
                       </TableCell>
+                      <TableCell className="border text-center text-xs p-0.5"></TableCell>
+                      <TableCell className="border text-center text-xs p-0.5"></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

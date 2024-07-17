@@ -10,6 +10,7 @@ import {
   monitoringLine,
   MonitoringLine,
   occupiedTeacher,
+  option,
   teacher,
   timeSlot,
 } from "@/lib/schema";
@@ -227,6 +228,7 @@ export type MonitoringDay = {
   moduleTableName: string;
   timeSlot: string;
   responsibleName: string;
+  option: string;
   locations: Location[];
 };
 export type MonitoringDayReservist = {
@@ -278,6 +280,7 @@ export const getMonitoringInDay = async (
       moduleResponsible: exam.responsibleId,
       responsibleFirstName: teachers.firstName,
       responsibleLastName: teachers.lastName,
+      option: option.name,
     })
     .from(exam)
     .where(inArray(exam.timeSlotId, timeSlots))
@@ -286,8 +289,9 @@ export const getMonitoringInDay = async (
     .innerJoin(locationTable, eq(locationTable.id, monitoring.locationId))
     .innerJoin(monitoringLine, eq(monitoringLine.monitoringId, monitoring.id))
     .innerJoin(teacher, eq(teacher.id, monitoringLine.teacherId))
+    .innerJoin(option, eq(exam.optionId, option.id))
     .leftJoin(teachers, eq(teachers.teacherId, exam.responsibleId))
-    .orderBy(asc(exam.timeSlotId), asc(locationTable.id));
+    .orderBy(asc(exam.timeSlotId), asc(moduleTable.name));
 
   const moduleMap: { [key: string]: MonitoringDay } = {};
 
@@ -300,6 +304,7 @@ export const getMonitoringInDay = async (
         moduleTableName: exam.moduleTableName,
         timeSlot: `S ${timeSlotIndex + 1}`,
         responsibleName: `${exam.responsibleFirstName} ${exam.responsibleLastName}`,
+        option: exam.option,
         locations: [],
       };
     }

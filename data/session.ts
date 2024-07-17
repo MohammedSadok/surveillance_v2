@@ -396,16 +396,10 @@ interface Statistics {
   }[];
 }
 
-export const getStatisticsOfLastSession = async (): Promise<Statistics> => {
+export const getStatisticsOfLastSession = async (
+  sessionId: number
+): Promise<Statistics> => {
   try {
-    const lastSession = await db.query.sessionExam.findFirst({
-      orderBy: [desc(sessionExam.id)],
-    });
-
-    if (!lastSession) {
-      throw new Error("No sessions found.");
-    }
-
     const totalMonitoring = await db
       .select({
         total: count(monitoring.id).as("total"),
@@ -414,7 +408,7 @@ export const getStatisticsOfLastSession = async (): Promise<Statistics> => {
       .innerJoin(monitoring, eq(monitoring.id, monitoringLine.monitoringId))
       .innerJoin(exam, eq(exam.id, monitoring.examId))
       .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
-      .where(eq(timeSlot.sessionExamId, lastSession.id));
+      .where(eq(timeSlot.sessionExamId, sessionId));
 
     const numberOfExams = await db
       .select({
@@ -422,7 +416,7 @@ export const getStatisticsOfLastSession = async (): Promise<Statistics> => {
       })
       .from(exam)
       .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
-      .where(eq(timeSlot.sessionExamId, lastSession.id));
+      .where(eq(timeSlot.sessionExamId, sessionId));
 
     const numberOfTeachers = await db
       .select({
@@ -442,7 +436,7 @@ export const getStatisticsOfLastSession = async (): Promise<Statistics> => {
       })
       .from(exam)
       .innerJoin(timeSlot, eq(timeSlot.id, exam.timeSlotId))
-      .where(eq(timeSlot.sessionExamId, lastSession.id))
+      .where(eq(timeSlot.sessionExamId, sessionId))
       .groupBy(timeSlot.date);
 
     const examsPerDay = numberOfExamsPerDay.map((exam) => ({

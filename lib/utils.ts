@@ -126,8 +126,8 @@ export const transformData = (
 ): Omit<StudentType, "id">[][] => {
   const data = rawData.map((data) => ({
     cne: data[4],
-    firstName: data[1],
-    lastName: data[2],
+    lastName: data[1],
+    firstName: data[2],
     sessionExamId: sessionExamId,
     moduleId: data[6],
     optionId: data[9],

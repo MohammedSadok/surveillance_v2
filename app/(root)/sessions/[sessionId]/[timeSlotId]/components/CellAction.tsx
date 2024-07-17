@@ -2,6 +2,7 @@
 
 import { AlertModal } from "@/components/modals/alert-modal";
 import PrintStudents from "@/components/print/PrintStudents";
+import PrintStudentsPresent from "@/components/print/PrintStudentsPresent";
 // import PrintStudentPresent from "@/components/print/PrintStudentPresent";
 // import PrintStudents from "@/components/print/PrintStudents";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       const result = await getStudentsPassExam(data);
+      setPrintType(present ? "Normal" : "Exam");
       setStudents(result);
     } catch (error) {
       toast.error("Error :" + error);
@@ -117,7 +119,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
       <div className="hidden">
         <div ref={componentRefPresent}>
-          <PrintStudents
+          <PrintStudentsPresent
             pageStudents={students}
             moduleName={data.moduleName}
             responsibleName={data.responsibleName}

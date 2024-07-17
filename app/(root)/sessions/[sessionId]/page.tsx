@@ -12,8 +12,11 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { getStatisticsOfLastSession } from "@/data/session";
 import { BookCheck, Users } from "lucide-react";
+type DashboardPageProps = {
+  params: { sessionId: string };
+};
 
-const DashboardPage = async () => {
+const DashboardPage = async ({ params }: DashboardPageProps) => {
   const {
     lastFiveExams,
     examsPerDay,
@@ -21,7 +24,7 @@ const DashboardPage = async () => {
     numberOfDepartments,
     numberOfExams,
     totalMonitoring,
-  } = await getStatisticsOfLastSession();
+  } = await getStatisticsOfLastSession(parseInt(params.sessionId));
 
   return (
     <>
