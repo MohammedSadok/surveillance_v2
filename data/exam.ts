@@ -41,6 +41,7 @@ export const createExam = async (newExam: ExamType) => {
           newExam.timeSlotId
         );
       }
+
       const students = await getStudentsInModuleAndOption(
         newExam.moduleId,
         newExam.optionId,

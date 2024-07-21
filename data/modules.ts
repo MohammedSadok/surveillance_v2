@@ -9,7 +9,8 @@ import {
   StudentType,
   timeSlot,
 } from "@/lib/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, count, eq, inArray, sql } from "drizzle-orm";
+import { getChildrenOptions } from "./option";
 import { getTimeSlotById } from "./timeSlot";
 /**
  *
@@ -74,17 +75,33 @@ export const getNumberOfStudentsInModule = async (
   optionId: string,
   sessionId: number
 ): Promise<number> => {
-  const result = await db
-    .select()
-    .from(student)
-    .where(
-      and(
-        eq(student.moduleId, moduleId),
-        eq(student.sessionExamId, sessionId),
-        eq(student.optionId, optionId)
-      )
-    );
-  return result.length;
+  const options = await getChildrenOptions(optionId);
+  const ids = options.map((option) => option.id);
+  if (ids.length === 0) {
+    const result = await db
+      .select({ count: count() })
+      .from(student)
+      .where(
+        and(
+          eq(student.moduleId, moduleId),
+          eq(student.sessionExamId, sessionId),
+          eq(student.optionId, optionId)
+        )
+      );
+    return result[0].count;
+  } else {
+    const result = await db
+      .select({ count: count() })
+      .from(student)
+      .where(
+        and(
+          eq(student.moduleId, moduleId),
+          eq(student.sessionExamId, sessionId),
+          inArray(student.optionId, ids)
+        )
+      );
+    return result[0].count;
+  }
 };
 
 /**
@@ -99,17 +116,33 @@ export const getStudentsInModuleAndOption = async (
   optionId: string,
   sessionExamId: number
 ): Promise<StudentType[]> => {
-  const result = await db
-    .select()
-    .from(student)
-    .where(
-      and(
-        eq(student.moduleId, moduleId),
-        eq(student.optionId, optionId),
-        eq(student.sessionExamId, sessionExamId)
-      )
-    );
-  return result;
+  const options = await getChildrenOptions(optionId);
+  const ids = options.map((option) => option.id);
+  if (ids.length === 0) {
+    const result = await db
+      .select()
+      .from(student)
+      .where(
+        and(
+          eq(student.moduleId, moduleId),
+          eq(student.optionId, optionId),
+          eq(student.sessionExamId, sessionExamId)
+        )
+      );
+    return result;
+  } else {
+    const result = await db
+      .select()
+      .from(student)
+      .where(
+        and(
+          eq(student.moduleId, moduleId),
+          inArray(student.optionId, ids),
+          eq(student.sessionExamId, sessionExamId)
+        )
+      );
+    return result;
+  }
 };
 
 /**
@@ -164,11 +197,42 @@ export const getModulesAlreadyHaveExam = async (sessionExamId: number) => {
   return result;
 };
 
+export type ModuleOptionType = {
+  moduleId: string;
+  name: string;
+  optionId: string;
+};
+export const getModulesCommuneInOptions = async (
+  id: string
+): Promise<ModuleOptionType[]> => {
+  const options = await getChildrenOptions(id);
+  const ids = options.map((option) => option.id);
+
+  if (ids.length === 0) {
+    return []; // Si aucun id n'est trouvé, retournez un tableau vide
+  }
+
+  const result = await db
+    .select({
+      moduleId: moduleTable.id,
+      name: moduleTable.name,
+      optionId: moduleOption.optionId,
+    })
+    .from(moduleTable)
+    .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
+    .where(inArray(moduleOption.optionId, ids))
+    .groupBy(moduleTable.id)
+    .having(sql`COUNT(${moduleOption.optionId}) = ${ids.length}`);
+
+  return result;
+};
+
 /**
  *
  * @param timeSlotId
+ * @param optionId
  * @returns Promise<ModuleType[]>
- * Return all modules that don't have an exam in a specific time slot
+ * Returns all modules that don't have an exam in a specific time slot
  */
 export const getModulesForExam = async (
   timeSlotId: number,
@@ -177,21 +241,27 @@ export const getModulesForExam = async (
   try {
     // Get the current time slot details
     const selectedTimeSlot = await getTimeSlotById(timeSlotId);
+    let distinctModules: ModuleOptionType[] = [];
 
     if (selectedTimeSlot) {
       // Get module IDs that already have exams in the same session but on different days
+      distinctModules = await getModulesCommuneInOptions(optionId);
+
+      if (distinctModules.length === 0) {
+        distinctModules = await db
+          .selectDistinct({
+            moduleId: moduleTable.id,
+            name: moduleTable.name,
+            optionId: moduleOption.optionId,
+          })
+          .from(moduleTable)
+          .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
+          .where(eq(moduleOption.optionId, optionId));
+      }
+
       const existingModules = await getModulesAlreadyHaveExam(
         selectedTimeSlot.sessionExamId
       );
-      const distinctModules = await db
-        .selectDistinct({
-          moduleId: moduleTable.id,
-          name: moduleTable.name,
-          optionId: moduleOption.optionId,
-        })
-        .from(moduleTable)
-        .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
-        .where(eq(moduleOption.optionId, optionId));
 
       // Filter out modules that already have exams in the same session but on different days
       const result = distinctModules.filter((module) => {
@@ -202,12 +272,10 @@ export const getModulesForExam = async (
         );
       });
 
-      const data = result.map((module) => {
-        return {
-          id: module.moduleId,
-          name: module.name,
-        };
-      });
+      const data = result.map((module) => ({
+        id: module.moduleId,
+        name: module.name,
+      }));
 
       return data;
     }

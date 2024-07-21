@@ -42,6 +42,7 @@ export const timeSlot = mysqlTable("timeSlot", {
 export const option = mysqlTable("option", {
   id: varchar("id", { length: 20 }).primaryKey(),
   name: varchar("name", { length: 50 }).notNull(),
+  childOf: varchar("childOf", { length: 20 }),
 });
 
 export const moduleTable = mysqlTable("module", {

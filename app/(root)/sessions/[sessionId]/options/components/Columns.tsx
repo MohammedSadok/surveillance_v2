@@ -30,6 +30,12 @@ export const columns = ({
     cell: ({ row }) => row.original.name,
   },
   {
+    accessorKey: "childOf",
+    header: "Fils de",
+    cell: ({ row }) =>
+      row.original.childOf === null ? "-" : row.original.childOf,
+  },
+  {
     id: "actions",
     cell: ({ row }) => <CellAction data={row.original} />,
   },

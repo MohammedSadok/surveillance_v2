@@ -92,6 +92,7 @@ export const insertOptionsAndModules = async (
         await createOption({
           id: optionId,
           name: optionsAndModules[optionId].name,
+          childOf: null,
         });
       }
       for (const moduleId in optionsAndModules[optionId].modules) {

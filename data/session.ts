@@ -25,6 +25,7 @@ import {
   insertMonitoringLines,
   LocationMonitoring,
 } from "./monitoring";
+import { getChildrenOptions } from "./option";
 import {
   getFreeTeachersForReservist,
   getFreeTeachersInSameDayAndCountMonitoring,
@@ -187,18 +188,37 @@ export const getDaysWithExams = async (
 
 export const getDaysWithExamsForOption = async (
   sessionId: number,
-  optionsId: string
+  optionId: string
 ): Promise<DayWithTimeSlotsOption[]> => {
   try {
-    const modulesInOption = db
-      .select({
-        id: moduleTable.id,
-        name: moduleTable.name,
-      })
-      .from(moduleTable)
-      .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
-      .where(eq(moduleOption.optionId, optionsId))
-      .as("modulesInOption");
+    const options = await getChildrenOptions(optionId);
+    let modulesInOption;
+    if (options.length > 0) {
+      modulesInOption = db
+        .selectDistinct({
+          id: moduleTable.id,
+          name: moduleTable.name,
+        })
+        .from(moduleTable)
+        .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
+        .where(
+          inArray(
+            moduleOption.optionId,
+            options.map((option) => option.id)
+          )
+        )
+        .as("modulesInOption");
+    } else {
+      modulesInOption = db
+        .select({
+          id: moduleTable.id,
+          name: moduleTable.name,
+        })
+        .from(moduleTable)
+        .innerJoin(moduleOption, eq(moduleTable.id, moduleOption.moduleId))
+        .where(eq(moduleOption.optionId, optionId))
+        .as("modulesInOption");
+    }
 
     const result = await db
       .select()

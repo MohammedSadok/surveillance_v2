@@ -75,7 +75,6 @@ const ExamModal = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [error, setError] = useState<string | undefined>("");
   const [studentNumber, setStudentNumber] = useState<number>(0);
-  const [open, setOpen] = useState(false);
   const params = useParams<{ timeSlotId: string; sessionId: string }>();
   const router = useRouter();
   const isModalOpen = isOpen && type === "createExam";
@@ -157,7 +156,7 @@ const ExamModal = () => {
     const fetchData = async () => {
       try {
         if (params.timeSlotId) {
-          const options = await getOptionsForExam(parseInt(params.timeSlotId));
+          const options = await getOptionsForExam();
           setOptions(options);
         }
       } catch (error) {
