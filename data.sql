@@ -67,6 +67,7 @@ CREATE TABLE `occupiedTeacher` (
 CREATE TABLE `option` (
 	`id` varchar(20) NOT NULL,
 	`name` varchar(50) NOT NULL,
+	`childOf` varchar(20),
 	CONSTRAINT `option_id` PRIMARY KEY(`id`)
 ) Engine = InnoDB;
 
