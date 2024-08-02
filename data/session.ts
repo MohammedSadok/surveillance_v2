@@ -40,10 +40,20 @@ export const LoginUser = async (email: string, password: string) => {
 };
 
 export const getUserByEmail = async (email: string) => {
-  const result = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
-  return { email: result?.email, password: result?.password } || null;
+  try {
+    const result = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+
+    if (!result) {
+      return null;
+    }
+
+    return { email: result.email, password: result.password };
+  } catch (error) {
+    console.error("Error fetching user by email:", error);
+    return null;
+  }
 };
 
 export const getUserDetailsByEmail = async (email: string) => {
@@ -406,9 +416,8 @@ interface Statistics {
   lastFiveExams: {
     id: number;
     module: string;
-    firstName: string;
-    lastName: string;
-    email: string;
+    firstName: string | null;
+    lastName: string | null;
   }[];
   examsPerDay: {
     day: string;
@@ -470,13 +479,12 @@ export const getStatisticsOfLastSession = async (
         module: moduleTable.name,
         firstName: teacher.firstName,
         lastName: teacher.lastName,
-        email: teacher.email,
       })
       .from(exam)
       .orderBy(desc(exam.id))
       .limit(5)
       .innerJoin(moduleTable, eq(moduleTable.id, exam.moduleId))
-      .innerJoin(teacher, eq(teacher.id, exam.responsibleId));
+      .leftJoin(teacher, eq(teacher.id, exam.responsibleId));
 
     return {
       lastFiveExams: lastFiveExams,

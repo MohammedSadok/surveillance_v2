@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import { getModulesCommuneInOptions } from "@/data/modules";
 import { getStatisticsOfLastSession } from "@/data/session";
 import { BookCheck, Users } from "lucide-react";
 type DashboardPageProps = {
@@ -26,7 +25,6 @@ const DashboardPage = async ({ params }: DashboardPageProps) => {
     numberOfExams,
     totalMonitoring,
   } = await getStatisticsOfLastSession(parseInt(params.sessionId));
-
   return (
     <>
       <div className="flex items-center justify-between">

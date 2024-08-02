@@ -1,4 +1,4 @@
-import { ModuleType, Option } from "@/lib/schema";
+import { ModuleType } from "@/lib/schema";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { CellAction } from "./CellAction";
@@ -6,14 +6,12 @@ import { CellAction } from "./CellAction";
 interface ColumnsProps {
   sessionId: number;
   optionId: string;
-  modules: ModuleType[];
 }
 
 export const columns = ({
   sessionId,
   optionId,
-  modules,
-}: ColumnsProps): ColumnDef<Option>[] => [
+}: ColumnsProps): ColumnDef<ModuleType>[] => [
   {
     accessorKey: "type",
     header: "Type",

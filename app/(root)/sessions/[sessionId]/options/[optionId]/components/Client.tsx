@@ -5,12 +5,12 @@ import { DataTable } from "@/components/ui/data-table";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { useModal } from "@/hooks/useModalStore";
-import { Option } from "@/lib/schema";
+import { ModuleType, Option } from "@/lib/schema";
 import { Plus } from "lucide-react";
 import { columns } from "./Columns";
 
 interface ModulesClientProps {
-  data: Option[];
+  data: ModuleType[];
   sessionId: string;
   optionId: string;
 }
@@ -23,7 +23,6 @@ export const ModulesClient: React.FC<ModulesClientProps> = ({
   const { onOpen } = useModal();
   const tableColumns = columns({
     sessionId: parseInt(sessionId),
-    modules: data,
     optionId: optionId,
   });
   return (
