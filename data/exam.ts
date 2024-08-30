@@ -188,8 +188,8 @@ export const getExamsWithDetailsAndCounts = async (
         student,
         and(
           eq(student.sessionExamId, selectedTimeSlot.sessionExamId),
-          eq(student.moduleId, exam.moduleId),
-          eq(student.optionId, exam.optionId)
+          eq(student.moduleId, exam.moduleId)
+          // eq(student.optionId, exam.optionId)
         )
       )
       .where(eq(exam.timeSlotId, timeSlotId))

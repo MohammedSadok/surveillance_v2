@@ -266,9 +266,9 @@ export const getModulesForExam = async (
       // Filter out modules that already have exams in the same session but on different days
       const result = distinctModules.filter((module) => {
         return !existingModules.some(
-          (existingModule) =>
-            existingModule.moduleId === module.moduleId &&
-            existingModule.optionId === module.optionId
+          (existingModule) => existingModule.moduleId === module.moduleId
+          // &&
+          //   existingModule.optionId === module.optionId
         );
       });
 

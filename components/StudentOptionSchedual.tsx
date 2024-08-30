@@ -103,6 +103,45 @@ const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
   });
+  // Calculer le nombre total de pages
+  const totalPages = Math.ceil(students.length / itemsPerPage);
+
+  const getPageNumbers = (): (number | string)[] => {
+    let pages: (number | string)[] = [];
+
+    if (totalPages <= 30) {
+      // Afficher toutes les pages si totalPages <= 30
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 5) {
+        // Si l'utilisateur est sur une page entre 1 et 5
+        pages = [...Array(10).keys()].map((i) => i + 1); // Pages 1 à 10
+        pages.push("...");
+        pages.push(totalPages); // Dernière page
+      } else if (currentPage > 5 && currentPage <= 10) {
+        // Si l'utilisateur est sur une page entre 6 et 10
+        pages.push(1); // Première page
+        pages.push("...");
+        pages = pages.concat([...Array(11).keys()].map((i) => i + 5)); // Pages 6 à 15
+        pages.push("...");
+        pages.push(totalPages); // Dernière page
+      } else if (currentPage > 10) {
+        // Si l'utilisateur est sur une page après 10
+        pages.push(1); // Première page
+        pages.push("...");
+        pages = pages.concat(
+          [...Array(10).keys()].map((i) => i + currentPage - 5)
+        ); // Pages autour de la page courante
+        if (currentPage + 5 < totalPages) {
+          pages.push("...");
+          pages.push(totalPages); // Dernière page
+        }
+      }
+    }
+    return pages;
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -220,15 +259,21 @@ const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
               onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
             />
           </PaginationItem>
-          {Array.from(
-            { length: Math.ceil(students.length / itemsPerPage) },
-            (_, index) => (
-              <PaginationItem key={index + 1} className="hover:cursor-pointer">
+          {getPageNumbers().map((page, index) =>
+            page === "..." ? (
+              <PaginationItem
+                key={page + "" + index}
+                className="hover:cursor-default"
+              >
+                <span>...</span>
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={page} className="hover:cursor-pointer">
                 <PaginationLink
-                  onClick={() => handlePageChange(index + 1)}
-                  isActive={index + 1 === currentPage}
+                  onClick={() => handlePageChange(Number(page))}
+                  isActive={page === currentPage}
                 >
-                  {index + 1}
+                  {page}
                 </PaginationLink>
               </PaginationItem>
             )
@@ -236,8 +281,7 @@ const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
           <PaginationItem className="hover:cursor-pointer">
             <PaginationNext
               onClick={() =>
-                currentPage < Math.ceil(students.length / itemsPerPage) &&
-                setCurrentPage(currentPage + 1)
+                currentPage < totalPages && setCurrentPage(currentPage + 1)
               }
             />
           </PaginationItem>
