@@ -26,6 +26,10 @@ export const columns: ColumnDef<ExamWithDetails>[] = [
         : row.original.responsibleName,
   },
   {
+    accessorKey: "optionName",
+    header: "Filière",
+  },
+  {
     id: "actions",
     cell: ({ row }) => <CellAction data={row.original} />,
   },

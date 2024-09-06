@@ -110,6 +110,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       <div className="hidden">
         <div ref={componentRef}>
           <PrintStudents
+            option={data.optionName}
             pageStudents={students}
             moduleName={data.moduleName}
             responsibleName={data.responsibleName}
@@ -120,6 +121,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       <div className="hidden">
         <div ref={componentRefPresent}>
           <PrintStudentsPresent
+            option={data.optionName}
             pageStudents={students}
             moduleName={data.moduleName}
             responsibleName={data.responsibleName}

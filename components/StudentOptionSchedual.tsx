@@ -291,28 +291,50 @@ const StudentOptionSchedule: React.FC<StudentOptionScheduleProps> = ({
       <div className="hidden">
         <div ref={componentRef}>
           <div className="flex justify-between items-center">
-            <Image
-              src={logo}
-              alt={""}
-              style={{
-                objectFit: "contain",
-              }}
-              className="w-[200px]"
-            />
-            <p className="capitalize text-xl">{selectedOption.name}</p>
+            <Table className="my-2 w-full">
+              <TableBody>
+                <TableRow>
+                  <TableCell className="border p-1">
+                    <span className="font-bold m-auto">Filière : </span>{" "}
+                    {selectedOption.name}
+                  </TableCell>
+                  <TableCell rowSpan={2} className="border">
+                    <Image
+                      src={logo}
+                      alt={""}
+                      style={{
+                        objectFit: "contain",
+                      }}
+                      className="w-[200px] m-auto"
+                    />
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
           <ScheduleOption sessionDays={sessionDays} />
           <div className="pagebreak"></div>
           <div className="flex justify-between items-center">
-            <Image
-              src={logo}
-              alt={""}
-              style={{
-                objectFit: "contain",
-              }}
-              className="w-[200px]"
-            />
-            <p className="capitalize text-xl">{selectedOption.name}</p>
+            <Table className="my-2 w-full">
+              <TableBody>
+                <TableRow>
+                  <TableCell className="border p-1">
+                    <span className="font-bold m-auto">Filière : </span>{" "}
+                    {selectedOption.name}
+                  </TableCell>
+                  <TableCell rowSpan={2} className="border">
+                    <Image
+                      src={logo}
+                      alt={""}
+                      style={{
+                        objectFit: "contain",
+                      }}
+                      className="w-[200px] m-auto"
+                    />
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
           <PrintStudentSchedule modules={modules} students={students} />
         </div>

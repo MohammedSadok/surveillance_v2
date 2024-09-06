@@ -13,5 +13,7 @@
       "database": "app",
       "username": "root"
     }
-  ]
+  ],
+  "pieces.cloudCapabilities": "Blended",
+  "pieces.telemetry": true
 }

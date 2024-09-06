@@ -6,6 +6,7 @@ import {
   LocationType,
   moduleTable,
   occupiedTeacher,
+  option,
   student,
   studentExamLocation,
   teacher,
@@ -179,10 +180,12 @@ export const getExamsWithDetailsAndCounts = async (
         responsibleName: teacher.lastName,
         timeSlotId: exam.timeSlotId,
         optionId: exam.optionId,
+        optionName: option.name,
         studentCount: sql<number>`count(${student.id})`.mapWith(Number),
       })
       .from(exam)
       .innerJoin(moduleTable, eq(exam.moduleId, moduleTable.id))
+      .innerJoin(option, eq(exam.optionId, option.id))
       .leftJoin(teacher, eq(exam.responsibleId, teacher.id))
       .leftJoin(
         student,
@@ -207,5 +210,6 @@ export type ExamWithDetails = {
   moduleId: string;
   moduleName: string;
   responsibleName: string | null;
+  optionName: string;
   studentCount: number;
 };

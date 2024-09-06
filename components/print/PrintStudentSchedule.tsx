@@ -45,7 +45,7 @@ const PrintStudentSchedule = ({
               {student.cne}
             </TableCell>
             <TableCell className="border text-center text-xs p-0.2">
-              {student.firstName + " " + student.lastName}
+              {student.lastName + " " + student.firstName}
             </TableCell>
             {modules.map((module) => {
               const exam = student.exams.find(

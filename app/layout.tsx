@@ -4,9 +4,8 @@ import { ModalProvider } from "@/providers/modal-provider";
 import { ToastProvider } from "@/providers/toast-provider";
 import type { Metadata } from "next";
 import { SessionProvider } from "next-auth/react";
-import { Inter as FontSans, Inter } from "next/font/google";
+import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
-const inter = Inter({ subsets: ["latin"] });
 
 const fontSans = FontSans({
   subsets: ["latin"],

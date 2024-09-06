@@ -1,4 +1,6 @@
 import { PageStudent } from "@/data/students";
+import logo from "@/images/logo.png";
+import Image from "next/image";
 import {
   Table,
   TableBody,
@@ -7,27 +9,57 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table"; // Assurez-vous d'ajuster le chemin selon votre structure réelle de composants UI
-
 interface PrintStudentsProps {
   pageStudents: PageStudent[];
   moduleName: string;
   responsibleName: string | null;
   isPresent?: boolean;
+  option: string;
 }
 
 const PrintStudents = ({
   pageStudents,
   moduleName,
   responsibleName,
+  option,
 }: PrintStudentsProps) => {
   return (
     <div className="teacher-monitoring">
       {pageStudents.map((pageStudent, index) => (
         <div key={index} className="page-student">
-          <h2>Local : {pageStudent.location.name}</h2>
-          <p>Module : {moduleName}</p>
-          <p>Résponsable : {responsibleName ?? "Non spécifié"}</p>
-
+          <Table className="my-2 w-full">
+            <TableBody>
+              <TableRow>
+                <TableCell className="border p-1">
+                  <span className="font-bold">Local : </span>
+                  {pageStudent.location.name}
+                </TableCell>
+                <TableCell className="border p-1">
+                  <span className="font-bold">Filière : </span> {option}
+                </TableCell>
+                <TableCell rowSpan={2} className="border">
+                  <Image
+                    src={logo}
+                    alt={""}
+                    style={{
+                      objectFit: "contain",
+                    }}
+                    className="w-[160px] m-auto"
+                  />
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="border p-1">
+                  <span className="font-bold">Module : </span>
+                  {moduleName}
+                </TableCell>
+                <TableCell className="border p-1">
+                  <span className="font-bold">Responsable : </span>
+                  {responsibleName ?? "Non spécifié"}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
           {pageStudent.studentGroups.map((studentGroup, groupIndex) => (
             <div key={groupIndex} className="student-group">
               <Table className="student-table">
@@ -54,7 +86,7 @@ const PrintStudents = ({
                         {student.cne}
                       </TableCell>
                       <TableCell className="border text-center text-xs p-0.5">
-                        {student.firstName} {student.lastName}
+                        {student.lastName} {student.firstName}
                       </TableCell>
                     </TableRow>
                   ))}

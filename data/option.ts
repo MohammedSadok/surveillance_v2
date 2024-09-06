@@ -218,11 +218,7 @@ export const generateStudentsExamOptionSchedule = async (
         eq(studentExamLocation.locationId, locationTable.id)
       )
       .where(eq(students.moduleId, exams.moduleId))
-      .orderBy(
-        asc(students.firstName)
-        // asc(studentExamLocation.locationId),
-        // asc(studentExamLocation.numberOfStudent)
-      );
+      .orderBy(asc(students.lastName));
     const groupedStudents = schedule.reduce((acc, curr) => {
       const existingStudent = acc.find((stu) => stu.cne === curr.cne);
       const examDetails = {
